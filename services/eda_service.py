@@ -1,5 +1,6 @@
 import os
 import json
+import traceback
 import numpy as np
 import pandas as pd
 from scipy import stats as scipy_stats
@@ -9,9 +10,15 @@ from database import db
 from models.eda_report_model import EDAReport
 from models.dataset_model import Dataset
 from services.dataset_service import read_dataframe
-from services.chart_service import (histogram, boxplot, correlation_heatmap,
-                                    missing_values_chart, line_chart,
-                                    bar_chart, pie_chart, trend_chart)
+from services.chart_service import (histogram, density_plot, boxplot,
+                                    correlation_heatmap, missing_values_chart,
+                                    missing_heatmap, line_chart, bar_chart,
+                                    pie_chart, trend_chart, rolling_average_chart)
+
+
+def _log_error(chart_name, column, error):
+    traceback.print_exc()
+    print(f"[EDA ERROR] {chart_name} | Column: {column} | {error}")
 
 
 def _get_output_dir(dataset_id):
@@ -53,8 +60,8 @@ def compute_statistics(df):
                 'skewness': round(float(s.skew()), 4),
                 'kurtosis': round(float(s.kurtosis()), 4)
             }
-        except Exception:
-            continue
+        except Exception as e:
+            _log_error('compute_statistics', col, e)
     return stats
 
 
@@ -169,19 +176,26 @@ def analyze_timeseries(df, date_col=None):
                     pd.to_datetime(df[col].dropna().head(100))
                     date_col = col
                     break
-                except Exception:
-                    continue
+                except Exception as e:
+                    _log_error('analyze_timeseries', col, e)
     if date_col is None:
         return None
     try:
-        ts = pd.to_datetime(df[date_col])
-    except Exception:
+        ts = pd.to_datetime(df[date_col], errors="coerce")
+    except Exception as e:
+        _log_error('analyze_timeseries', date_col, e)
         return None
     numeric = df.select_dtypes(include=[np.number]).columns.tolist()
     value_col = numeric[0] if numeric else None
     if value_col is None:
         return {'date_column': date_col, 'value_column': None, 'msg': 'No numeric column for trend analysis'}
-    ts_df = pd.DataFrame({'date': ts, 'value': df[value_col]}).dropna().sort_values('date')
+    ts_df = pd.DataFrame({
+        "date": pd.to_datetime(df[date_col], errors="coerce"),
+        "value": df[value_col]
+    }).dropna()
+
+    ts_df = ts_df.sort_values("date")
+
     if len(ts_df) < 4:
         return {'date_column': date_col, 'value_column': value_col, 'msg': 'Not enough data points'}
     return {
@@ -222,42 +236,146 @@ def get_feature_insights(df, stats, correlation, outliers_iqr):
     return insights
 
 
-def generate_charts(df, output_dir, selected_charts=None):
-    charts = {}
+def compute_column_types(df):
     numeric = df.select_dtypes(include=[np.number]).columns.tolist()
     categorical = df.select_dtypes(include=['object', 'category']).columns.tolist()
-    all_charts = selected_charts or ['histogram', 'boxplot', 'correlation', 'missing',
-                                     'bar', 'pie', 'trend']
+    date = [c for c in df.columns if pd.api.types.is_datetime64_any_dtype(df[c])]
+    boolean = [c for c in df.columns if pd.api.types.is_bool_dtype(df[c])]
+    return {
+        'numeric': numeric,
+        'categorical': categorical,
+        'date': date,
+        'boolean': boolean
+    }
+
+
+def compute_outlier_summary(outliers_iqr):
+    if not outliers_iqr:
+        return {'total_outliers': 0, 'affected_columns': [], 'overall_pct': 0}
+    total = sum(o['outlier_count'] for o in outliers_iqr.values())
+    affected = [{'column': col, 'count': o['outlier_count'], 'pct': o['outlier_pct']}
+                for col, o in outliers_iqr.items() if o['outlier_count'] > 0]
+    return {
+        'total_outliers': total,
+        'affected_columns': affected,
+        'overall_pct': round(total / max(sum(o['outlier_count'] + 1 for o in outliers_iqr.values()) - total, 1), 2)
+    }
+
+def _prepare_dataframe(df):
+    """
+    Prepare dataframe safely for EDA.
+
+    - Automatically detect datetime columns.
+    - Convert datetime strings to datetime dtype.
+    - Preserve categorical/text columns.
+    - Never force string columns into float.
+    """
+
+    df = df.copy()
+
+    for col in df.columns:
+
+        # Already datetime
+        if pd.api.types.is_datetime64_any_dtype(df[col]):
+            continue
+
+        # Only inspect object columns
+        if df[col].dtype == object:
+
+            sample = df[col].dropna().head(100)
+
+            if len(sample) == 0:
+                continue
+
+            try:
+                parsed = pd.to_datetime(sample, errors="coerce")
+
+                # Consider it datetime only if most values are valid dates
+                if parsed.notna().sum() >= len(sample) * 0.8:
+                    df[col] = pd.to_datetime(df[col], errors="coerce")
+
+            except Exception:
+                pass
+
+    return df
+
+def _detect_datetime_columns(df):
+    """Detect datetime columns including object-typed date strings."""
+    date_cols = []
+    for col in df.columns:
+        if pd.api.types.is_datetime64_any_dtype(df[col]):
+            date_cols.append(col)
+        elif df[col].dtype == object:
+            sample = df[col].dropna().head(100)
+            if len(sample) == 0:
+                continue
+            try:
+                converted = pd.to_datetime(sample, errors='coerce')
+                if converted.notna().sum() >= len(sample) * 0.8:
+                    date_cols.append(col)
+            except Exception:
+                continue
+    return date_cols
+
+
+def generate_charts(df, output_dir, selected_charts=None):
+    charts = {}
+    df =_prepare_dataframe(df)
+    numeric = df.select_dtypes(include=[np.number]).columns.tolist()
+    categorical = df.select_dtypes(include=['object', 'category']).columns.tolist()
+    date_cols = _detect_datetime_columns(df)
+    all_charts = selected_charts or ['histogram', 'boxplot', 'density', 'correlation', 'missing',
+                                     'missing_heatmap', 'bar', 'pie', 'trend']
     if 'histogram' in all_charts:
         charts['histograms'] = []
-        for col in numeric[:4]:
+        for col in numeric[:6]:
             try:
                 chart_data, img = histogram(df, col, output_dir)
-                charts['histograms'].append({'column': col, 'plotly': chart_data, 'image': img})
-            except Exception:
-                continue
+                if chart_data:
+                    charts['histograms'].append({'column': col, 'plotly': chart_data, 'image': img})
+            except Exception as e:
+                _log_error('histogram', col, e)
     if 'boxplot' in all_charts:
         charts['boxplots'] = []
-        for col in numeric[:4]:
+        for col in numeric[:6]:
             try:
                 chart_data, img = boxplot(df, col, output_dir)
-                charts['boxplots'].append({'column': col, 'plotly': chart_data, 'image': img})
-            except Exception:
-                continue
+                if chart_data:
+                    charts['boxplots'].append({'column': col, 'plotly': chart_data, 'image': img})
+            except Exception as e:
+                _log_error('boxplot', col, e)
+    if 'density' in all_charts:
+        charts['density'] = []
+        for col in numeric[:6]:
+            try:
+                chart_data, img = density_plot(df, col, output_dir)
+                if chart_data:
+                    charts['density'].append({'column': col, 'plotly': chart_data, 'image': img})
+            except Exception as e:
+                _log_error('density_plot', col, e)
     if 'correlation' in all_charts:
         try:
             chart_data, img = correlation_heatmap(df, output_dir)
-            charts['correlation'] = {'plotly': chart_data, 'image': img}
-        except Exception:
+            charts['correlation'] = {'plotly': chart_data, 'image': img} if chart_data else None
+        except Exception as e:
+            _log_error('correlation_heatmap', 'all', e)
             charts['correlation'] = None
     if 'missing' in all_charts:
         missing = compute_missing_analysis(df)['columns']
         if missing:
             try:
                 chart_data, img = missing_values_chart(missing, output_dir)
-                charts['missing'] = {'plotly': chart_data, 'image': img}
-            except Exception:
+                charts['missing'] = {'plotly': chart_data, 'image': img} if chart_data else None
+            except Exception as e:
+                _log_error('missing_values_chart', 'all', e)
                 charts['missing'] = None
+    if 'missing_heatmap' in all_charts:
+        try:
+            chart_data, img = missing_heatmap(df, output_dir)
+            charts['missing_heatmap'] = {'plotly': chart_data, 'image': img} if chart_data else None
+        except Exception as e:
+            _log_error('missing_heatmap', 'all', e)
+            charts['missing_heatmap'] = None
     if 'bar' in all_charts:
         charts['bar'] = []
         for col in categorical[:3]:
@@ -265,9 +383,10 @@ def generate_charts(df, output_dir, selected_charts=None):
                 freq = df[col].dropna().value_counts().head(10).to_dict()
                 freq = {str(k): int(v) for k, v in freq.items()}
                 chart_data, img = bar_chart(freq, f'Top Values — {col}', output_dir, f'bar_{col}')
-                charts['bar'].append({'column': col, 'plotly': chart_data, 'image': img})
-            except Exception:
-                continue
+                if chart_data:
+                    charts['bar'].append({'column': col, 'plotly': chart_data, 'image': img})
+            except Exception as e:
+                _log_error('bar_chart', col, e)
     if 'pie' in all_charts:
         charts['pie'] = []
         for col in categorical[:3]:
@@ -275,21 +394,30 @@ def generate_charts(df, output_dir, selected_charts=None):
                 freq = df[col].dropna().value_counts().head(8).to_dict()
                 freq = {str(k): int(v) for k, v in freq.items()}
                 chart_data, img = pie_chart(freq, f'Distribution — {col}', output_dir, f'pie_{col}')
-                charts['pie'].append({'column': col, 'plotly': chart_data, 'image': img})
-            except Exception:
-                continue
+                if chart_data:
+                    charts['pie'].append({'column': col, 'plotly': chart_data, 'image': img})
+            except Exception as e:
+                _log_error('pie_chart', col, e)
     if 'trend' in all_charts:
-        date_col = None
-        for col in df.columns:
-            if pd.api.types.is_datetime64_any_dtype(df[col]):
-                date_col = col
-                break
-        if date_col and numeric:
+        if not date_cols:
+            _log_error('trend_chart', '', 'No datetime column detected in dataset')
+        elif not numeric:
+            _log_error('trend_chart', '', 'No numeric columns available for trend analysis')
+        else:
+            date_col = date_cols[0]
+            value_col = numeric[0]
             try:
-                chart_data, img = trend_chart(df, date_col, numeric[0], output_dir)
-                charts['trend'] = {'plotly': chart_data, 'image': img}
-            except Exception:
+                chart_data, img = trend_chart(df, date_col, value_col, output_dir)
+                charts['trend'] = {'plotly': chart_data, 'image': img} if chart_data else None
+            except Exception as e:
+                _log_error('trend_chart', value_col, e)
                 charts['trend'] = None
+            try:
+                ra_data, ra_img = rolling_average_chart(df, date_col, value_col, 7, output_dir)
+                charts['rolling_avg'] = {'plotly': ra_data, 'image': ra_img} if ra_data else None
+            except Exception as e:
+                _log_error('rolling_average_chart', value_col, e)
+                charts['rolling_avg'] = None
     total_charts = sum(len(v) for v in charts.values() if isinstance(v, list)) + \
                    sum(1 for v in charts.values() if isinstance(v, dict) and v is not None)
     return charts, total_charts
@@ -312,6 +440,7 @@ def run_automatic_eda(dataset_id, user_id):
     categorical = analyze_categorical(df)
     timeseries = analyze_timeseries(df)
     feature_insights = get_feature_insights(df, stats, correlation, outliers_iqr)
+    column_types = compute_column_types(df)
 
     charts, total_charts = generate_charts(df, output_dir)
 
@@ -330,7 +459,8 @@ def run_automatic_eda(dataset_id, user_id):
             'memory_kb': round(df.memory_usage(deep=True).sum() / 1024, 2),
             'numeric_count': len(df.select_dtypes(include=[np.number]).columns),
             'categorical_count': len(df.select_dtypes(include=['object', 'category']).columns),
-            'date_count': len([c for c in df.columns if pd.api.types.is_datetime64_any_dtype(df[c])])
+           'date_count': len(_detect_datetime_columns(df)),
+            'column_types': column_types
         },
         'statistics': stats,
         'missing_analysis': missing,
@@ -366,7 +496,8 @@ def run_manual_eda(dataset_id, user_id, selections):
             'memory_kb': round(df.memory_usage(deep=True).sum() / 1024, 2),
             'numeric_count': len(df.select_dtypes(include=[np.number]).columns),
             'categorical_count': len(df.select_dtypes(include=['object', 'category']).columns),
-            'date_count': len([c for c in df.columns if pd.api.types.is_datetime64_any_dtype(df[c])])
+           'date_count': len(_detect_datetime_columns(df)),
+            'column_types': compute_column_types(df)
         }
     }
     charts = {}

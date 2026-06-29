@@ -10,7 +10,7 @@ from services.forecasting_service import (
     _is_date_column, _is_numeric_timestamp
 )
 from services.activity_service import log_activity
-from services.workflow_service import get_workflow_state, get_step_urls as wf_get_step_urls
+from services.workflow_service import get_workflow_state, get_step_urls as wf_get_step_urls, require_step_completion, complete_step
 from services.dataset_service import read_dataframe
 from models.preprocessing_report_model import PreprocessingReport
 import pandas as pd
@@ -57,10 +57,9 @@ def mode_selection(dataset_id):
     if not dataset:
         flash('Dataset not found.', 'danger')
         return redirect(url_for('dataset.list_datasets'))
-
-    report = get_forecast_report(dataset_id)
-    if report:
-        return redirect(url_for('forecasting.dashboard', dataset_id=dataset_id))
+    resp = require_step_completion(dataset_id, 5)
+    if resp:
+        return resp
 
     return redirect(url_for('forecasting.setup', dataset_id=dataset_id))
 
@@ -72,10 +71,9 @@ def setup(dataset_id):
     if not dataset:
         flash('Dataset not found.', 'danger')
         return redirect(url_for('dataset.list_datasets'))
-
-    report = get_forecast_report(dataset_id)
-    if report:
-        return redirect(url_for('forecasting.dashboard', dataset_id=dataset_id))
+    resp = require_step_completion(dataset_id, 5)
+    if resp:
+        return resp
 
     numeric, categorical, date_cols, all_cols = _get_column_info(dataset_id, session['user_id'])
     if numeric is None:
@@ -103,10 +101,9 @@ def train(dataset_id):
     if not dataset:
         flash('Dataset not found.', 'danger')
         return redirect(url_for('dataset.list_datasets'))
-
-    report = get_forecast_report(dataset_id)
-    if report:
-        return redirect(url_for('forecasting.dashboard', dataset_id=dataset_id))
+    resp = require_step_completion(dataset_id, 5)
+    if resp:
+        return resp
 
     horizon = request.form.get('horizon', 30, type=int)
     test_ratio_str = request.form.get('test_ratio', '0.2')
@@ -140,6 +137,7 @@ def train(dataset_id):
     log_activity(session['user_id'], log_type, 'forecasting', dataset_id,
                  f'Forecasting completed for {dataset.file_name}')
     flash('Forecasting completed successfully!', 'success')
+    complete_step(dataset_id)
     return redirect(url_for('forecasting.results', dataset_id=dataset_id))
 
 
@@ -150,6 +148,9 @@ def results(dataset_id):
     if not dataset:
         flash('Dataset not found.', 'danger')
         return redirect(url_for('dataset.list_datasets'))
+    resp = require_step_completion(dataset_id, 5)
+    if resp:
+        return resp
 
     results_data = load_forecast_results(dataset_id)
     if not results_data:
@@ -177,6 +178,9 @@ def dashboard(dataset_id):
     if not dataset:
         flash('Dataset not found.', 'danger')
         return redirect(url_for('dataset.list_datasets'))
+    resp = require_step_completion(dataset_id, 5)
+    if resp:
+        return resp
 
     report = get_forecast_report(dataset_id)
     if not report:
@@ -201,6 +205,9 @@ def download_forecast(dataset_id):
     if not dataset:
         flash('Dataset not found.', 'danger')
         return redirect(url_for('dataset.list_datasets'))
+    resp = require_step_completion(dataset_id, 5)
+    if resp:
+        return resp
 
     report = get_forecast_report(dataset_id)
     if not report or not report.forecast_file:

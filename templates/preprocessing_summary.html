@@ -57,15 +57,15 @@
                         <div>
                             <strong>
                                 {% if step_name == 'missing_values' %}
-                                <i class="fas fa-exclamation-triangle text-danger me-2"></i>Missing Value Handling
+                                <i class="fas fa-exclamation-triangle me-2"></i>Missing Value Handling
                                 {% elif step_name == 'outliers' %}
-                                <i class="fas fa-exclamation-circle text-warning me-2"></i>Outlier Handling
+                                <i class="fas fa-exclamation-circle me-2"></i>Outlier Handling
                                 {% elif step_name == 'encoding' %}
-                                <i class="fas fa-tag text-primary me-2"></i>Encoding
+                                <i class="fas fa-tag me-2"></i>Encoding
                                 {% elif step_name == 'scaling' %}
-                                <i class="fas fa-arrows-alt text-info me-2"></i>Feature Scaling
+                                <i class="fas fa-arrows-alt me-2"></i>Feature Scaling
                                 {% elif step_name == 'date_features' %}
-                                <i class="fas fa-calendar text-secondary me-2"></i>Date Features
+                                <i class="fas fa-calendar me-2"></i>Date Features
                                 {% else %}
                                 <i class="fas fa-cog me-2"></i>{{ step_name|replace('_', ' ')|title }}
                                 {% endif %}
@@ -88,14 +88,14 @@
                     <div class="mt-2 small">
                         <span class="text-danger">Before: {{ step_data.missing_before }}</span>
                         <span class="mx-2">&rarr;</span>
-                        <span class="text-success">After: {{ step_data.missing_after }}</span>
+                        <span class="text-primary">After: {{ step_data.missing_after }}</span>
                     </div>
                     {% endif %}
                     {% if step_data.get('total_detected') is not none %}
                     <div class="mt-2 small">
-                        <span class="text-warning">Detected: {{ step_data.total_detected }}</span>
+                        <span class="text-primary">Detected: {{ step_data.total_detected }}</span>
                         <span class="mx-2">|</span>
-                        <span class="text-success">Removed: {{ step_data.total_removed }}</span>
+                        <span class="text-primary">Removed: {{ step_data.total_removed }}</span>
                     </div>
                     {% endif %}
                     {% if step_data.get('features_created') %}
@@ -119,12 +119,12 @@
 
     <div class="card shadow border-0 mb-4">
         <div class="card-header bg-white py-3">
-            <h5 class="mb-0 fw-bold"><i class="fas fa-download text-success me-2"></i>Download Processed Dataset</h5>
+            <h5 class="mb-0 fw-bold"><i class="fas fa-download text-primary me-2"></i>Download Processed Dataset</h5>
         </div>
         <div class="card-body text-center py-4">
             <p class="text-muted mb-4">Download the preprocessed dataset in your preferred format.</p>
             <div class="d-flex justify-content-center gap-3">
-                <a href="{{ url_for('preprocessing.download_processed', dataset_id=dataset.id, format='csv') }}" class="btn btn-success btn-lg px-4">
+                <a href="{{ url_for('preprocessing.download_processed', dataset_id=dataset.id, format='csv') }}" class="btn btn-primary btn-lg px-4">
                     <i class="fas fa-file-csv me-2"></i>Download CSV
                 </a>
                 <a href="{{ url_for('preprocessing.download_processed', dataset_id=dataset.id, format='xlsx') }}" class="btn btn-primary btn-lg px-4">

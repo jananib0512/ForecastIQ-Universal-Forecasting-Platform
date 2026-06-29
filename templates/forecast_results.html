@@ -4,17 +4,17 @@
 <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 <style>
 .chart-container { min-height: 400px; width: 100%; }
-.section-card { border-radius: 0.75rem; transition: box-shadow 0.2s; border: 1px solid #e9ecef; }
+.section-card { border-radius: 0.75rem; transition: box-shadow 0.2s; border: 1px solid var(--border-color); }
 .section-card:hover { box-shadow: 0 0.25rem 1rem rgba(0,0,0,0.08) !important; }
 .metric-card { padding: 1.25rem; text-align: center; border-radius: 0.5rem; height: 100%; }
 .metric-card h3 { font-weight: 800; margin-bottom: 0.25rem; }
-.metric-card small { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d; }
-.model-result-card { padding: 1rem; border-radius: 0.5rem; margin-bottom: 0.75rem; border-left: 4px solid #dee2e6; }
-.model-result-card.best { border-left-color: #198754; background: rgba(25,135,84,0.05); }
-.model-result-card.failed { border-left-color: #dc3545; background: rgba(220,53,69,0.03); }
-.nav-tabs .nav-link { font-size: 0.85rem; padding: 0.6rem 1rem; border: none; border-bottom: 2px solid transparent; color: #6c757d; font-weight: 500; }
-.nav-tabs .nav-link:hover { border-bottom-color: #dee2e6; color: #495057; }
-.nav-tabs .nav-link.active { border-bottom-color: #0d6efd; color: #0d6efd; background: transparent; }
+.metric-card small { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); }
+.model-result-card { padding: 1rem; border-radius: 0.5rem; margin-bottom: 0.75rem; border-left: 4px solid var(--border-color); }
+.model-result-card.best { border-left-color: var(--primary); background: var(--primary-light); }
+.model-result-card.failed { border-left-color: var(--danger); background: var(--danger-light); }
+.nav-tabs .nav-link { font-size: 0.85rem; padding: 0.6rem 1rem; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-weight: 500; }
+.nav-tabs .nav-link:hover { border-bottom-color: var(--border-color); color: var(--text-primary); }
+.nav-tabs .nav-link.active { border-bottom-color: var(--primary); color: var(--primary); background: transparent; }
 .tab-pane { padding-top: 1.5rem; }
 </style>
 {% endblock %}
@@ -40,7 +40,7 @@
             <p class="text-muted mb-0">{{ dataset.file_name }} &mdash; Best Model: <strong>{{ best_model }}</strong></p>
         </div>
         <div class="d-flex gap-2">
-            <a href="{{ url_for('forecasting.download_forecast', dataset_id=dataset.id) }}" class="btn btn-success btn-sm">
+            <a href="{{ url_for('forecasting.download_forecast', dataset_id=dataset.id) }}" class="btn btn-primary btn-sm">
                 <i class="fas fa-download me-1"></i>Download Forecast CSV
             </a>
             <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#forecastResultsRerunModal">
@@ -51,11 +51,11 @@
 
     <div class="row g-3 mb-4">
         <div class="col-md-2 col-6"><div class="card section-card h-100"><div class="card-body text-center py-3"><h4 class="fw-bold text-primary mb-0">{{ best_model }}</h4><small class="text-muted">Best Model</small></div></div></div>
-        <div class="col-md-2 col-6"><div class="card section-card h-100"><div class="card-body text-center py-3"><h4 class="fw-bold text-info mb-0">{{ r.get('horizon', 0) }}</h4><small class="text-muted">Forecast Horizon</small></div></div></div>
-        <div class="col-md-2 col-6"><div class="card section-card h-100"><div class="card-body text-center py-3"><h4 class="fw-bold text-success mb-0">{{ r.get('full_data_count', 0) }}</h4><small class="text-muted">Data Points</small></div></div></div>
+        <div class="col-md-2 col-6"><div class="card section-card h-100"><div class="card-body text-center py-3"><h4 class="fw-bold text-primary mb-0">{{ r.get('horizon', 0) }}</h4><small class="text-muted">Forecast Horizon</small></div></div></div>
+        <div class="col-md-2 col-6"><div class="card section-card h-100"><div class="card-body text-center py-3"><h4 class="fw-bold text-primary mb-0">{{ r.get('full_data_count', 0) }}</h4><small class="text-muted">Data Points</small></div></div></div>
         <div class="col-md-2 col-6"><div class="card section-card h-100"><div class="card-body text-center py-3"><h4 class="fw-bold text-secondary mb-0">{{ r.get('train_count', 0) }}</h4><small class="text-muted">Train Samples</small></div></div></div>
-        <div class="col-md-2 col-6"><div class="card section-card h-100"><div class="card-body text-center py-3"><h4 class="fw-bold text-warning mb-0">{{ r.get('test_count', 0) }}</h4><small class="text-muted">Test Samples</small></div></div></div>
-        <div class="col-md-2 col-6"><div class="card section-card h-100"><div class="card-body text-center py-3"><h4 class="fw-bold text-danger mb-0">{{ r.get('target_column', 'N/A') }}</h4><small class="text-muted">Target</small></div></div></div>
+        <div class="col-md-2 col-6"><div class="card section-card h-100"><div class="card-body text-center py-3"><h4 class="fw-bold text-secondary mb-0">{{ r.get('test_count', 0) }}</h4><small class="text-muted">Test Samples</small></div></div></div>
+        <div class="col-md-2 col-6"><div class="card section-card h-100"><div class="card-body text-center py-3"><h4 class="fw-bold text-primary mb-0">{{ r.get('target_column', 'N/A') }}</h4><small class="text-muted">Target</small></div></div></div>
     </div>
 
     <ul class="nav nav-tabs" id="forecastTabs" role="tablist">
@@ -85,7 +85,7 @@
                 <div class="col-12">
                     <div class="card section-card">
                         <div class="card-header bg-white py-3">
-                            <h5 class="mb-0 fw-bold text-info"><i class="fas fa-chart-line text-info me-2"></i>Future Forecast — Next {{ r.get('horizon', 0) }} Periods</h5>
+                            <h5 class="mb-0 fw-bold text-primary"><i class="fas fa-chart-line text-primary me-2"></i>Future Forecast — Next {{ r.get('horizon', 0) }} Periods</h5>
                         </div>
                         <div class="card-body">
                             <div id="futureForecastChart" class="chart-container"></div>
@@ -97,7 +97,7 @@
                 <div class="col-12">
                     <div class="card section-card">
                         <div class="card-header bg-white py-3">
-                            <h5 class="mb-0 fw-bold text-success"><i class="fas fa-chart-area text-success me-2"></i>Full History + Forecast</h5>
+                            <h5 class="mb-0 fw-bold text-primary"><i class="fas fa-chart-area text-primary me-2"></i>Full History + Forecast</h5>
                         </div>
                         <div class="card-body">
                             <div id="fullForecastChart" class="chart-container"></div>
@@ -113,8 +113,8 @@
             <div class="row g-3 mb-4">
                 <div class="col-md-3"><div class="metric-card bg-light"><h3 class="text-primary">{{ m.get('mae', 'N/A') }}</h3><small>MAE</small></div></div>
                 <div class="col-md-3"><div class="metric-card bg-light"><h3 class="text-danger">{{ m.get('rmse', 'N/A') }}</h3><small>RMSE</small></div></div>
-                <div class="col-md-3"><div class="metric-card bg-light"><h3 class="text-warning">{{ m.get('mape', 'N/A') }}</h3><small>MAPE (%)</small></div></div>
-                <div class="col-md-3"><div class="metric-card bg-light"><h3 class="text-success">{{ m.get('r2', 'N/A') }}</h3><small>R² Score</small></div></div>
+                <div class="col-md-3"><div class="metric-card bg-light"><h3 class="text-secondary">{{ m.get('mape', 'N/A') }}</h3><small>MAPE (%)</small></div></div>
+                <div class="col-md-3"><div class="metric-card bg-light"><h3 class="text-primary">{{ m.get('r2', 'N/A') }}</h3><small>R² Score</small></div></div>
             </div>
             <div class="card section-card mb-4">
                 <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold"><i class="fas fa-info-circle me-2 text-primary"></i>Model Information</h5></div>
@@ -157,11 +157,11 @@
                             <tbody>
                                 {% for mname, mres in r.get('models', {}).items() %}
                                 {% set is_best = (mname == best_model) %}
-                                <tr class="{{ 'table-success' if is_best else '' }}">
-                                    <td class="px-3 fw-medium">{{ mname }} {% if is_best %}<span class="badge bg-success ms-1">Best</span>{% endif %}</td>
+                                <tr class="{{ 'table-primary' if is_best else '' }}">
+                                    <td class="px-3 fw-medium">{{ mname }} {% if is_best %}<span class="badge bg-primary ms-1">Best</span>{% endif %}</td>
                                     <td class="px-3">
                                         {% if mres.get('status') == 'success' %}
-                                        <span class="badge bg-success">Success</span>
+                                        <span class="badge bg-primary">Success</span>
                                         {% else %}
                                         <span class="badge bg-danger">Failed</span>
                                         {% endif %}
@@ -185,19 +185,19 @@
 
         <div class="tab-pane fade" id="pane-insights">
             <div class="row g-4 mb-4">
-                <div class="col-md-4"><div class="card section-card h-100 border-primary"><div class="card-body text-center"><i class="fas fa-arrow-{{ 'up' if ins.get('trend_direction') == 'upward' else 'down' }} text-{{ 'success' if ins.get('trend_direction') == 'upward' else 'danger' }} fa-2x mb-2"></i><h5 class="fw-bold">Trend Direction</h5><p class="mb-0 text-muted">{{ ins.get('trend_direction', 'N/A')|title }}</p></div></div></div>
-                <div class="col-md-4"><div class="card section-card h-100 border-{{ 'success' if ins.get('total_growth_pct', 0) > 0 else 'danger' }}"><div class="card-body text-center"><i class="fas fa-percentage text-{{ 'success' if ins.get('total_growth_pct', 0) > 0 else 'danger' }} fa-2x mb-2"></i><h5 class="fw-bold">Growth/Decline</h5><p class="mb-0 text-muted">{{ "%.2f"|format(ins.get('total_growth_pct', 0)) }}% {{ 'growth' if ins.get('total_growth_pct', 0) > 0 else 'decline' }}</p></div></div></div>
-                <div class="col-md-4"><div class="card section-card h-100 border-info"><div class="card-body text-center"><i class="fas fa-cubes text-info fa-2x mb-2"></i><h5 class="fw-bold">Model Success</h5><p class="mb-0 text-muted">{{ ins.get('successful_models', 0) }} / {{ ins.get('models_trained', 0) }} models succeeded</p></div></div></div>
+                <div class="col-md-4"><div class="card section-card h-100 border-primary"><div class="card-body text-center"><i class="fas fa-arrow-{{ 'up' if ins.get('trend_direction') == 'upward' else 'down' }} text-{{ 'primary' if ins.get('trend_direction') == 'upward' else 'danger' }} fa-2x mb-2"></i><h5 class="fw-bold">Trend Direction</h5><p class="mb-0 text-muted">{{ ins.get('trend_direction', 'N/A')|title }}</p></div></div></div>
+                <div class="col-md-4"><div class="card section-card h-100 border-{{ 'primary' if ins.get('total_growth_pct', 0) > 0 else 'danger' }}"><div class="card-body text-center"><i class="fas fa-percentage text-{{ 'primary' if ins.get('total_growth_pct', 0) > 0 else 'danger' }} fa-2x mb-2"></i><h5 class="fw-bold">Growth/Decline</h5><p class="mb-0 text-muted">{{ "%.2f"|format(ins.get('total_growth_pct', 0)) }}% {{ 'growth' if ins.get('total_growth_pct', 0) > 0 else 'decline' }}</p></div></div></div>
+                <div class="col-md-4"><div class="card section-card h-100 border-primary"><div class="card-body text-center"><i class="fas fa-cubes text-primary fa-2x mb-2"></i><h5 class="fw-bold">Model Success</h5><p class="mb-0 text-muted">{{ ins.get('successful_models', 0) }} / {{ ins.get('models_trained', 0) }} models succeeded</p></div></div></div>
             </div>
             <div class="row g-4 mb-4">
                 <div class="col-md-6">
                     <div class="card section-card h-100">
-                        <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold text-success"><i class="fas fa-check-circle me-2"></i>Forecast Confidence</h5></div>
+                        <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold text-primary"><i class="fas fa-check-circle me-2"></i>Forecast Confidence</h5></div>
                         <div class="card-body">
                             {% set r2_val = m.get('r2', 0) %}
                             {% set mape_val = m.get('mape', 100) %}
                             {% set confidence = 'High' if r2_val > 0.8 and mape_val < 10 else 'Medium' if r2_val > 0.5 and mape_val < 20 else 'Low' %}
-                            {% set conf_color = 'success' if confidence == 'High' else 'warning' if confidence == 'Medium' else 'danger' %}
+                            {% set conf_color = 'primary' if confidence == 'High' else 'secondary' if confidence == 'Medium' else 'danger' %}
                             <div class="text-center py-3">
                                 <span class="badge bg-{{ conf_color }}" style="font-size:1.25rem;padding:0.5rem 1.5rem;">{{ confidence }} Confidence</span>
                                 <p class="text-muted mt-3 small">
@@ -209,7 +209,7 @@
                 </div>
                 <div class="col-md-6">
                     <div class="card section-card h-100">
-                        <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold text-info"><i class="fas fa-info-circle me-2"></i>Summary</h5></div>
+                        <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold text-primary"><i class="fas fa-info-circle me-2"></i>Summary</h5></div>
                         <div class="card-body">
                             <p class="mb-1">
                                 <strong>{{ best_model }}</strong> was selected as the best model with
@@ -309,9 +309,9 @@ document.addEventListener('DOMContentLoaded', function() {
         var fullChart = {
             data: [
                 { x: makeNumDates(allDates), y: allValues, type: 'scatter', mode: 'lines+markers',
-                  name: 'Actual', line: {color: '#0d6efd', width: 2} },
+                  name: 'Actual', line: {color: '#2563EB', width: 2} },
                 { x: makeNumDates(allDates), y: testPredExtended, type: 'scatter', mode: 'lines+markers',
-                  name: 'Predicted (Test)', line: {color: '#dc3545', width: 2, dash: 'dash'} }
+                  name: 'Predicted (Test)', line: {color: '#DC2626', width: 2, dash: 'dash'} }
             ],
             layout: {
                 title: {text: 'Actual vs Predicted Values'},
@@ -328,8 +328,8 @@ document.addEventListener('DOMContentLoaded', function() {
         var futureChart = {
             data: [
                 { x: makeNumDates(futureDates), y: futurePredictions, type: 'scatter', mode: 'lines+markers',
-                  name: 'Forecast', line: {color: '#198754', width: 3},
-                  marker: {color: '#198754', size: 6} }
+                  name: 'Forecast', line: {color: '#2563EB', width: 3},
+                  marker: {color: '#2563EB', size: 6} }
             ],
             layout: {
                 title: {text: 'Future Forecast — Next ' + r.horizon + ' Periods'},
@@ -350,10 +350,10 @@ document.addEventListener('DOMContentLoaded', function() {
         var historyChart = {
             data: [
                 { x: makeNumDates(fullDates), y: fullVals, type: 'scatter', mode: 'lines',
-                  name: 'Historical', line: {color: '#0d6efd', width: 2} },
+                  name: 'Historical', line: {color: '#2563EB', width: 2} },
                 { x: makeNumDates(fullDates.concat(futureDates)), y: fullVals.concat(futurePredictions),
                   type: 'scatter', mode: 'lines',
-                  name: 'Extended View', line: {color: '#198754', width: 2, dash: 'dot'},
+                  name: 'Extended View', line: {color: '#2563EB', width: 2, dash: 'dot'},
                   connectgaps: true }
             ],
             layout: {

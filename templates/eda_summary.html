@@ -61,12 +61,12 @@
 
     {% if missing and missing.get('columns') %}
     <div class="card shadow border-0 mb-4">
-        <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Missing Values</h5></div>
+        <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold text-primary"><i class="fas fa-exclamation-triangle me-2"></i>Missing Values</h5></div>
         <div class="card-body">
             <p><strong>{{ missing.total_missing }}</strong> missing values out of <strong>{{ missing.total_cells }}</strong> total cells ({{ missing.overall_pct }}%)</p>
             <div class="d-flex flex-wrap gap-2">
                 {% for m in missing.columns %}
-                <span class="badge bg-{{ 'danger' if m.percentage > 20 else 'warning' if m.percentage > 5 else 'secondary' }} fs-6">
+                <span class="badge bg-{{ 'danger' if m.percentage > 20 else 'secondary' if m.percentage > 5 else 'secondary' }} fs-6">
                     {{ m.column }}: {{ m.count }} ({{ m.percentage }}%)
                 </span>
                 {% endfor %}
@@ -77,7 +77,7 @@
 
     {% if corr and corr.get('high_corr') %}
     <div class="card shadow border-0 mb-4">
-        <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold text-info"><i class="fas fa-link me-2"></i>Strong Correlations (|r| >= 0.7)</h5></div>
+        <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold text-primary"><i class="fas fa-link me-2"></i>Strong Correlations (|r| >= 0.7)</h5></div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-sm">
@@ -95,11 +95,11 @@
 
     {% if outliers %}
     <div class="card shadow border-0 mb-4">
-        <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold text-warning"><i class="fas fa-exclamation-circle me-2"></i>Outliers</h5></div>
+        <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold text-primary"><i class="fas fa-exclamation-circle me-2"></i>Outliers</h5></div>
         <div class="card-body">
             <div class="d-flex flex-wrap gap-2">
                 {% for col, o in outliers.items() %}
-                <span class="badge bg-{{ 'danger' if o.outlier_pct > 5 else 'warning' if o.outlier_pct > 0 else 'secondary' }} fs-6">
+                <span class="badge bg-{{ 'danger' if o.outlier_pct > 5 else 'secondary' if o.outlier_pct > 0 else 'secondary' }} fs-6">
                     {{ col }}: {{ o.outlier_count }} outliers ({{ o.outlier_pct }}%)
                 </span>
                 {% endfor %}
@@ -110,7 +110,7 @@
 
     {% if insights %}
     <div class="card shadow border-0 mb-4">
-        <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold"><i class="fas fa-lightbulb text-warning me-2"></i>Key Insights</h5></div>
+        <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold"><i class="fas fa-lightbulb text-primary me-2"></i>Key Insights</h5></div>
         <div class="card-body">
             <ul class="list-group list-group-flush">
                 {% if insights.get('potential_targets') %}
@@ -128,7 +128,7 @@
                 <li class="list-group-item px-0">
                     <strong>Features with >5% Outliers:</strong>
                     {% for f in insights.many_outliers_features[:5] %}
-                    <span class="badge bg-warning text-dark me-1">{{ f.column }} ({{ f.pct }}%)</span>
+                    <span class="badge bg-secondary me-1">{{ f.column }} ({{ f.pct }}%)</span>
                     {% endfor %}
                 </li>
                 {% endif %}
@@ -149,11 +149,11 @@
         <a href="{{ url_for('eda.eda_dashboard', dataset_id=dataset.id) }}" class="btn btn-primary">
             <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
         </a>
-        <a href="{{ url_for('eda.eda_charts', dataset_id=dataset.id) }}" class="btn btn-outline-info">
+        <a href="{{ url_for('eda.eda_charts', dataset_id=dataset.id) }}" class="btn btn-outline-primary">
             <i class="fas fa-images me-1"></i>View Charts
         </a>
         <form method="POST" action="{{ url_for('eda.generate_report', dataset_id=dataset.id) }}" class="d-inline">
-            <button type="submit" class="btn btn-success">
+            <button type="submit" class="btn btn-primary">
                 <i class="fas fa-file-pdf me-1"></i>Generate Report
             </button>
         </form>

@@ -9,7 +9,7 @@ from services.comparison_service import (
     generate_comparison_pdf, load_comparison_results
 )
 from services.activity_service import log_activity
-from services.workflow_service import get_workflow_state, get_step_urls as wf_get_step_urls
+from services.workflow_service import get_workflow_state, get_step_urls as wf_get_step_urls, require_step_completion, complete_step
 from services.forecasting_service import load_forecast_results
 
 comparison_bp = Blueprint('comparison', __name__)
@@ -22,6 +22,9 @@ def compare_dashboard(dataset_id):
     if not dataset:
         flash('Dataset not found.', 'danger')
         return redirect(url_for('dataset.list_datasets'))
+    resp = require_step_completion(dataset_id, 6)
+    if resp:
+        return resp
 
     forecast_data = load_forecast_results(dataset_id)
     if not forecast_data:
@@ -33,6 +36,7 @@ def compare_dashboard(dataset_id):
 
     existing = load_comparison_results(dataset_id)
     if existing:
+        complete_step(dataset_id)   
         return redirect(url_for('comparison.compare_results', dataset_id=dataset_id))
 
     comparison, error = build_comparison(dataset_id)
@@ -41,6 +45,7 @@ def compare_dashboard(dataset_id):
         return redirect(url_for('forecasting.dashboard', dataset_id=dataset_id))
 
     log_activity(session['user_id'], 'compared_models', 'comparison', dataset_id)
+    complete_step(dataset_id)
     return redirect(url_for('comparison.compare_results', dataset_id=dataset_id))
 
 
@@ -56,6 +61,9 @@ def compare_results(dataset_id):
     if not dataset:
         flash('Dataset not found.', 'danger')
         return redirect(url_for('dataset.list_datasets'))
+    resp = require_step_completion(dataset_id, 6)
+    if resp:
+        return resp
 
     comparison, error = get_comparison_context(dataset_id)
     if error:
@@ -76,12 +84,14 @@ def compare_results(dataset_id):
     return render_template(
         'compare_results.html',
         dataset=dataset,
+        dataset_id=dataset_id,
         comparison=comparison,
         chart_json=chart_json,
         workflow_state=workflow_state,
         step_urls=step_urls,
         prev_url=prev_url,
         next_url=next_url,
+        current_step=6,
         enumerate=enumerate,
     )
 
@@ -131,6 +141,9 @@ def _make_bar_chart(labels, values, title, ylabel, color):
 @comparison_bp.route('/compare/api/model/<int:dataset_id>/<model_name>')
 @login_required
 def api_model_data(dataset_id, model_name):
+    resp = require_step_completion(dataset_id, 6)
+    if resp:
+        return jsonify({'error': 'Access denied. Complete previous steps first.'}), 403
     data, error = get_model_actual_predicted(dataset_id, model_name)
     if error:
         return jsonify({'error': error}), 404
@@ -144,6 +157,9 @@ def download_comparison(dataset_id, file_format):
     if not dataset:
         flash('Dataset not found.', 'danger')
         return redirect(url_for('dataset.list_datasets'))
+    resp = require_step_completion(dataset_id, 6)
+    if resp:
+        return resp
 
     generators = {
         'csv': generate_comparison_csv,

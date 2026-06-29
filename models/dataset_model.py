@@ -12,6 +12,7 @@ class Dataset(db.Model):
     file_size = db.Column(db.Integer, default=0)
     rows_count = db.Column(db.Integer, default=0)
     columns_count = db.Column(db.Integer, default=0)
+    workflow_step = db.Column(db.Integer, default=1)
     upload_date = db.Column(db.DateTime, default=datetime.utcnow)
 
     validation_reports = db.relationship(

@@ -9,7 +9,7 @@ from services.eda_service import (run_automatic_eda, run_manual_eda,
                                   save_eda_results, load_eda_results,
                                   _get_output_dir)
 from services.activity_service import log_activity
-from services.workflow_service import get_workflow_state, get_step_urls as wf_get_step_urls
+from services.workflow_service import get_workflow_state, get_step_urls as wf_get_step_urls, require_step_completion, complete_step
 
 eda_bp = Blueprint('eda', __name__)
 
@@ -34,10 +34,9 @@ def mode_selection(dataset_id):
     if not dataset:
         flash('Dataset not found.', 'danger')
         return redirect(url_for('dataset.list_datasets'))
-    # Auto-redirect to EDA dashboard if EDA already completed
-    from models.eda_report_model import EDAReport
-    if EDAReport.query.filter_by(dataset_id=dataset_id).first():
-        return redirect(url_for('eda.eda_dashboard', dataset_id=dataset_id))
+    resp = require_step_completion(dataset_id, 3)
+    if resp:
+        return resp
     workflow_state = get_workflow_state(dataset_id)
     step_urls = wf_get_step_urls(dataset_id, 3, workflow_state)
     return render_template('eda_mode.html', dataset=dataset,
@@ -52,6 +51,9 @@ def auto_eda(dataset_id):
     if not dataset:
         flash('Dataset not found.', 'danger')
         return redirect(url_for('dataset.list_datasets'))
+    resp = require_step_completion(dataset_id, 3)
+    if resp:
+        return resp
     results, error = run_automatic_eda(dataset_id, session['user_id'])
     if error:
         flash(error, 'danger')
@@ -60,6 +62,7 @@ def auto_eda(dataset_id):
     log_activity(session['user_id'], 'eda_auto_completed', 'eda', dataset_id,
                  f'Automatic EDA completed for {dataset.file_name}')
     flash('Automatic EDA completed successfully!', 'success')
+    complete_step(dataset_id)
     return redirect(url_for('eda.eda_dashboard', dataset_id=dataset_id))
 
 
@@ -70,6 +73,9 @@ def manual_eda(dataset_id):
     if not dataset:
         flash('Dataset not found.', 'danger')
         return redirect(url_for('dataset.list_datasets'))
+    resp = require_step_completion(dataset_id, 3)
+    if resp:
+        return resp
 
     if request.method == 'POST':
         selections = {
@@ -92,6 +98,7 @@ def manual_eda(dataset_id):
         log_activity(session['user_id'], 'eda_manual_completed', 'eda', dataset_id,
                      f'Manual EDA completed for {dataset.file_name}')
         flash('Manual EDA completed successfully!', 'success')
+        complete_step(dataset_id)
         return redirect(url_for('eda.eda_dashboard', dataset_id=dataset_id))
 
     workflow_state = get_workflow_state(dataset_id)
@@ -107,6 +114,9 @@ def eda_dashboard(dataset_id):
     dataset, results = _get_results(dataset_id, session['user_id'])
     if not dataset or not results:
         return redirect(url_for('eda.mode_selection', dataset_id=dataset_id))
+    resp = require_step_completion(dataset_id, 3)
+    if resp:
+        return resp
     charts = results.get('charts', {})
     eda_mode = 'automatic'
     report = None
@@ -115,7 +125,6 @@ def eda_dashboard(dataset_id):
         if report:
             eda_mode = report.eda_mode
 
-    # Ensure dataset_overview exists with fallbacks from dataset model
     overview = results.get('dataset_overview', {})
     if not overview or not overview.get('rows'):
         overview = {
@@ -126,15 +135,24 @@ def eda_dashboard(dataset_id):
             'categorical_count': len(results.get('categorical_analysis', {})),
             'date_count': 0
         }
+    if 'column_types' not in overview:
+        stats_cols = list(results.get('statistics', {}).keys())
+        cat_cols = list(results.get('categorical_analysis', {}).keys())
+        overview['column_types'] = {
+            'numeric': stats_cols,
+            'categorical': cat_cols,
+            'date': [],
+            'boolean': []
+        }
     results['dataset_overview'] = overview
 
-    # Compute data quality score and smart insights
     from services.eda_service import compute_data_quality_score, generate_smart_insights
     quality_score = compute_data_quality_score(results)
     smart_insights = generate_smart_insights(results)
 
     workflow_state = get_workflow_state(dataset_id)
     step_urls = wf_get_step_urls(dataset_id, 3, workflow_state)
+   
     return render_template('eda_dashboard.html', dataset=dataset, results=results,
                            charts=charts, eda_mode=eda_mode, report=report,
                            quality_score=quality_score, smart_insights=smart_insights,
@@ -145,28 +163,13 @@ def eda_dashboard(dataset_id):
 @eda_bp.route('/eda-summary/<int:dataset_id>')
 @login_required
 def eda_summary(dataset_id):
-    dataset, results = _get_results(dataset_id, session['user_id'])
-    if not dataset or not results:
-        return redirect(url_for('eda.mode_selection', dataset_id=dataset_id))
-    workflow_state = get_workflow_state(dataset_id)
-    step_urls = wf_get_step_urls(dataset_id, 3, workflow_state)
-    return render_template('eda_summary.html', dataset=dataset, results=results,
-                           dataset_id=dataset_id, current_step=workflow_state['current'],
-                           workflow_state=workflow_state, step_urls=step_urls)
+    return redirect(url_for('eda.eda_dashboard', dataset_id=dataset_id))
 
 
 @eda_bp.route('/eda-charts/<int:dataset_id>')
 @login_required
 def eda_charts(dataset_id):
-    dataset, results = _get_results(dataset_id, session['user_id'])
-    if not dataset or not results:
-        return redirect(url_for('eda.mode_selection', dataset_id=dataset_id))
-    charts = results.get('charts', {})
-    workflow_state = get_workflow_state(dataset_id)
-    step_urls = wf_get_step_urls(dataset_id, 3, workflow_state)
-    return render_template('eda_charts.html', dataset=dataset, charts=charts,
-                           dataset_id=dataset_id, current_step=workflow_state['current'],
-                           workflow_state=workflow_state, step_urls=step_urls)
+    return redirect(url_for('eda.eda_dashboard', dataset_id=dataset_id))
 
 
 @eda_bp.route('/generate-eda-report/<int:dataset_id>', methods=['POST'])
@@ -175,6 +178,9 @@ def generate_report(dataset_id):
     dataset, results = _get_results(dataset_id, session['user_id'])
     if not dataset or not results:
         return redirect(url_for('eda.mode_selection', dataset_id=dataset_id))
+    resp = require_step_completion(dataset_id, 3)
+    if resp:
+        return resp
 
     output_dir = results.get('output_dir')
     if not output_dir:
@@ -198,6 +204,9 @@ def download_report(dataset_id):
     dataset, results = _get_results(dataset_id, session['user_id'])
     if not dataset or not results:
         return redirect(url_for('eda.mode_selection', dataset_id=dataset_id))
+    resp = require_step_completion(dataset_id, 3)
+    if resp:
+        return resp
     output_dir = results.get('output_dir')
     if not output_dir:
         flash('Report not found.', 'danger')

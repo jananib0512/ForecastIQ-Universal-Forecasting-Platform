@@ -1,5 +1,5 @@
 from services.activity_service import log_activity, get_recent_activities
-from services.workflow_service import get_workflow_state, get_step_urls
+from services.workflow_service import get_workflow_state, get_step_urls, complete_step, require_step_completion
 from services.preprocessing_service import (
     run_automatic_preprocessing, run_manual_preprocessing,
     get_preprocessing_report, get_column_details

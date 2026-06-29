@@ -2,13 +2,13 @@
 {% block title %}Forecast Setup{% endblock %}
 {% block extra_css %}
 <style>
-.config-section { background: #fff; border-radius: 0.75rem; border: 1px solid #e9ecef; padding: 1.5rem; margin-bottom: 1.5rem; }
-.config-section h5 { font-weight: 700; margin-bottom: 1rem; color: #212529; }
-.model-card { cursor: pointer; transition: all 0.2s ease; border: 2px solid #e9ecef; border-radius: 0.75rem; padding: 1rem; text-align: center; height: 100%; }
-.model-card:hover { border-color: #0d6efd; background: rgba(13,110,253,0.03); }
-.model-card.selected { border-color: #0d6efd; background: rgba(13,110,253,0.08); }
+.config-section { background: #fff; border-radius: 0.75rem; border: 1px solid var(--border-color); padding: 1.5rem; margin-bottom: 1.5rem; }
+.config-section h5 { font-weight: 700; margin-bottom: 1rem; color: var(--text-primary); }
+.model-card { cursor: pointer; transition: all 0.2s ease; border: 2px solid var(--border-color); border-radius: 0.75rem; padding: 1rem; text-align: center; height: 100%; }
+.model-card:hover { border-color: var(--primary); background: var(--primary-light); }
+.model-card.selected { border-color: var(--primary); background: var(--primary-light); }
 .model-card h6 { font-weight: 600; margin-bottom: 0.25rem; }
-.model-card small { color: #6c757d; }
+.model-card small { color: var(--text-secondary); }
 .model-card .model-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
 </style>
 {% endblock %}
@@ -56,7 +56,7 @@
             </div>
             <div class="col-md-4">
                 <div class="config-section">
-                    <h5><i class="fas fa-bullseye text-success me-2"></i>Target Column</h5>
+                    <h5><i class="fas fa-bullseye text-primary me-2"></i>Target Column</h5>
                     <select name="target_column" class="form-select" required>
                         <option value="">-- Auto Detect --</option>
                         {% for col in numeric_columns %}
@@ -68,7 +68,7 @@
             </div>
             <div class="col-md-4">
                 <div class="config-section">
-                    <h5><i class="fas fa-clock text-info me-2"></i>Forecast Horizon</h5>
+                    <h5><i class="fas fa-clock text-primary me-2"></i>Forecast Horizon</h5>
                     <select name="horizon" class="form-select">
                         <option value="7">7 Days</option>
                         <option value="30" selected>30 Days</option>
@@ -84,7 +84,7 @@
         <div class="row g-4 mb-4">
             <div class="col-md-6">
                 <div class="config-section">
-                    <h5><i class="fas fa-code-branch text-warning me-2"></i>Train/Test Split</h5>
+                    <h5><i class="fas fa-code-branch text-primary me-2"></i>Train/Test Split</h5>
                     <select name="test_ratio" class="form-select">
                         <option value="0.3">70% Train / 30% Test</option>
                         <option value="0.2" selected>80% Train / 20% Test</option>
@@ -95,7 +95,7 @@
             </div>
             <div class="col-md-6">
                 <div class="config-section">
-                    <h5><i class="fas fa-microchip text-danger me-2"></i>Forecast Model</h5>
+                    <h5><i class="fas fa-microchip text-primary me-2"></i>Forecast Model</h5>
                     <select name="model_name" class="form-select" id="modelSelect">
                         <option value="">-- Auto Select Best Model --</option>
                         <optgroup label="Traditional Models">

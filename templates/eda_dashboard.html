@@ -6,142 +6,192 @@
 .chart-container { min-height: 380px; width: 100%; }
 .stats-table { font-size: 0.85rem; }
 .stats-table td, .stats-table th { white-space: nowrap; }
-.section-card { border-radius: 0.75rem; transition: box-shadow 0.2s; border: 1px solid #e9ecef; }
-.section-card:hover { box-shadow: 0 0.25rem 1rem rgba(0,0,0,0.08) !important; }
-.quality-ring { width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; font-weight: 800; margin: 0 auto; }
+.section-card { border-radius: 0.75rem; border: 1px solid var(--border-color); }
+.quality-ring { width: 90px; height: 90px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; margin: 0 auto; }
 .insight-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.9rem; }
-.nav-tabs .nav-link { font-size: 0.85rem; padding: 0.6rem 1rem; border: none; border-bottom: 2px solid transparent; color: #6c757d; font-weight: 500; }
-.nav-tabs .nav-link:hover { border-bottom-color: #dee2e6; color: #495057; }
-.nav-tabs .nav-link.active { border-bottom-color: #0d6efd; color: #0d6efd; background: transparent; }
-.tab-pane { padding-top: 1.5rem; }
 .stat-card-sm { padding: 1rem; text-align: center; border-radius: 0.5rem; }
 .stat-card-sm h4 { margin-bottom: 0.25rem; font-weight: 700; }
 .stat-card-sm small { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
+.section-divider { height: 2px; background: linear-gradient(90deg, #2563EB, transparent); opacity: 0.2; margin: 2rem 0; }
+.empty-chart-placeholder { min-height: 200px; display: flex; align-items: center; justify-content: center; flex-direction: column; color: #94A3B8; }
+.empty-chart-placeholder i { font-size: 2.5rem; margin-bottom: 0.5rem; }
 </style>
 {% endblock %}
 {% block content %}
+{% set overview = results.get('dataset_overview', {}) %}
+{% set stats = results.get('statistics', {}) %}
+{% set missing = results.get('missing_analysis', {}) %}
+{% set corr = results.get('correlation', {}) %}
+{% set outliers = results.get('outliers_iqr', {}) %}
+{% set cat = results.get('categorical_analysis', {}) %}
+{% set ts = results.get('timeseries', {}) %}
+{% set insights = results.get('feature_insights', {}) %}
+{% set qs = quality_score or {} %}
+{% set si = smart_insights or [] %}
+{% set col_types = overview.get('column_types', {}) %}
+
 <div class="container-fluid py-3 px-4">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ url_for('dataset.list_datasets') }}">Datasets</a></li>
             <li class="breadcrumb-item"><a href="{{ url_for('dataset.detail', dataset_id=dataset.id) }}">{{ dataset.file_name }}</a></li>
-            <li class="breadcrumb-item"><a href="{{ url_for('eda.mode_selection', dataset_id=dataset.id) }}">EDA Mode</a></li>
-            <li class="breadcrumb-item active">{{ eda_mode|title }} EDA Results</li>
+            <li class="breadcrumb-item active">EDA Dashboard</li>
         </ol>
     </nav>
 
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h3 class="fw-bold mb-0"><i class="fas fa-chart-pie text-primary me-2"></i>EDA Dashboard</h3>
             <p class="text-muted mb-0">{{ dataset.file_name }} &mdash; {{ eda_mode|title }} EDA</p>
         </div>
         <div class="d-flex gap-2">
             <form method="POST" action="{{ url_for('eda.generate_report', dataset_id=dataset.id) }}" class="d-inline">
-                <button type="submit" class="btn btn-success btn-sm"><i class="fas fa-file-pdf me-1"></i>Generate Report</button>
+                <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-file-pdf me-1"></i>Generate Report</button>
             </form>
         </div>
     </div>
 
-    {% set overview = results.get('dataset_overview', {}) %}
-    {% set stats = results.get('statistics', {}) %}
-    {% set missing = results.get('missing_analysis', {}) %}
-    {% set corr = results.get('correlation', {}) %}
-    {% set outliers = results.get('outliers_iqr', {}) %}
-    {% set cat = results.get('categorical_analysis', {}) %}
-    {% set ts = results.get('timeseries', {}) %}
-    {% set insights = results.get('feature_insights', {}) %}
-    {% set qs = quality_score or {} %}
-    {% set si = smart_insights or [] %}
-
-    <ul class="nav nav-tabs" id="edaTabs" role="tablist">
-        <li class="nav-item" role="presentation"><button class="nav-link active" id="tab-overview" data-bs-toggle="tab" data-bs-target="#pane-overview" type="button"><i class="fas fa-home me-1"></i>Overview</button></li>
-        {% if missing and missing.get('columns') %}<li class="nav-item"><button class="nav-link" id="tab-missing" data-bs-toggle="tab" data-bs-target="#pane-missing" type="button"><i class="fas fa-exclamation-triangle me-1"></i>Missing</button></li>{% endif %}
-        {% if outliers %}<li class="nav-item"><button class="nav-link" id="tab-outliers" data-bs-toggle="tab" data-bs-target="#pane-outliers" type="button"><i class="fas fa-chart-box me-1"></i>Outliers</button></li>{% endif %}
-        {% if corr and corr.get('columns') and corr.columns|length > 1 %}<li class="nav-item"><button class="nav-link" id="tab-correlation" data-bs-toggle="tab" data-bs-target="#pane-correlation" type="button"><i class="fas fa-th me-1"></i>Correlation</button></li>{% endif %}
-        {% if stats %}<li class="nav-item"><button class="nav-link" id="tab-distribution" data-bs-toggle="tab" data-bs-target="#pane-distribution" type="button"><i class="fas fa-chart-bar me-1"></i>Distribution</button></li>{% endif %}
-        {% if ts and ts.get('value_column') %}<li class="nav-item"><button class="nav-link" id="tab-timeseries" data-bs-toggle="tab" data-bs-target="#pane-timeseries" type="button"><i class="fas fa-chart-line me-1"></i>Time Series</button></li>{% endif %}
-        {% if cat or insights %}<li class="nav-item"><button class="nav-link" id="tab-insights" data-bs-toggle="tab" data-bs-target="#pane-insights" type="button"><i class="fas fa-lightbulb me-1"></i>Insights</button></li>{% endif %}
-        <li class="nav-item"><button class="nav-link" id="tab-report" data-bs-toggle="tab" data-bs-target="#pane-report" type="button"><i class="fas fa-file-alt me-1"></i>Report</button></li>
-    </ul>
-
-    <div class="tab-content" id="edaTabContent">
-
-        <div class="tab-pane fade show active" id="pane-overview">
-            <div class="row g-3 mb-4">
-                <div class="col-md-2 col-6"><div class="card section-card h-100"><div class="card-body text-center py-3"><h4 class="fw-bold text-primary mb-0">{{ overview.get('rows', 0) }}</h4><small class="text-muted">Total Rows</small></div></div></div>
-                <div class="col-md-2 col-6"><div class="card section-card h-100"><div class="card-body text-center py-3"><h4 class="fw-bold text-info mb-0">{{ overview.get('columns', 0) }}</h4><small class="text-muted">Total Columns</small></div></div></div>
-                <div class="col-md-2 col-6"><div class="card section-card h-100"><div class="card-body text-center py-3"><h4 class="fw-bold text-success mb-0">{{ overview.get('numeric_count', 0) }}</h4><small class="text-muted">Numeric</small></div></div></div>
-                <div class="col-md-2 col-6"><div class="card section-card h-100"><div class="card-body text-center py-3"><h4 class="fw-bold text-warning mb-0">{{ overview.get('categorical_count', 0) }}</h4><small class="text-muted">Categorical</small></div></div></div>
-                <div class="col-md-2 col-6"><div class="card section-card h-100"><div class="card-body text-center py-3"><h4 class="fw-bold text-secondary mb-0">{{ overview.get('date_count', 0) }}</h4><small class="text-muted">Date</small></div></div></div>
-                <div class="col-md-2 col-6"><div class="card section-card h-100"><div class="card-body text-center py-3"><h4 class="fw-bold text-secondary mb-0">{{ "%.1f"|format(overview.get('memory_kb', 0)) }}</h4><small class="text-muted">Memory (KB)</small></div></div></div>
-            </div>
-
-            <div class="row g-4 mb-4">
-                <div class="col-lg-4">
-                    <div class="card section-card h-100">
-                        <div class="card-body text-center">
-                            <h5 class="fw-bold mb-3"><i class="fas fa-medal me-1"></i>Data Quality Score</h5>
-                            {% set qs_score = qs.get('score', 0) %}
-                            {% set qs_color = 'success' if qs_score >= 90 else 'warning' if qs_score >= 75 else 'danger' %}
-                            {% set qs_grade = qs.get('grade', 'N/A') %}
-                            <div class="quality-ring border-4 border-{{ qs_color }}" style="border-style:solid;">
-                                <span class="text-{{ qs_color }}">{{ qs_grade }}</span>
-                            </div>
-                            <h3 class="text-{{ qs_color }} fw-bold mt-2">{{ qs_score }}%</h3>
-                            <div class="mt-3 text-start small">
-                                <div class="d-flex justify-content-between mb-1"><span>Completeness</span><span>{{ qs.get('completeness', 0) }}%</span></div>
-                                <div class="progress mb-2" style="height:6px;"><div class="progress-bar bg-success" style="width:{{ qs.get('completeness', 0) }}%"></div></div>
-                                <div class="d-flex justify-content-between mb-1"><span>Outlier Score</span><span>{{ qs.get('outlier_score', 0) }}%</span></div>
-                                <div class="progress mb-2" style="height:6px;"><div class="progress-bar bg-warning" style="width:{{ qs.get('outlier_score', 0) }}%"></div></div>
-                                <div class="d-flex justify-content-between mb-1"><span>Missing Cells</span><span>{{ qs.get('total_missing', 0) }} / {{ qs.get('total_cells', 0) }} ({{ qs.get('missing_pct', 0) }}%)</span></div>
-                            </div>
-                        </div>
-                    </div>
+    <!-- ===== SECTION 1: Dataset Overview ===== -->
+    <div class="card section-card mb-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 fw-bold"><i class="fas fa-info-circle text-primary me-2"></i>1. Dataset Overview</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3 col-6">
+                    <div class="card section-card h-100"><div class="card-body text-center py-3"><h6 class="fw-bold text-primary mb-0 text-truncate">{{ dataset.file_name }}</h6><small class="text-muted">Dataset Name</small></div></div>
                 </div>
-                <div class="col-lg-8">
-                    <div class="card section-card h-100">
-                        <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold"><i class="fas fa-lightbulb text-warning me-2"></i>Smart Insights</h5></div>
-                        <div class="card-body">
-                            {% if si %}
-                            {% for item in si %}
-                            <div class="d-flex align-items-start mb-3">
-                                <div class="insight-icon bg-{{ item.color }} bg-opacity-10 text-{{ item.color }} me-3"><i class="fas {{ item.icon }}"></i></div>
-                                <div><h6 class="mb-1 fw-bold">{{ item.title }}</h6><p class="mb-0 small text-muted">{{ item.text }}</p></div>
-                            </div>
-                            {% endfor %}
-                            {% else %}
-                            <p class="text-muted text-center py-3">No insights available. Run EDA analysis first.</p>
-                            {% endif %}
-                        </div>
-                    </div>
+                <div class="col-md-3 col-6">
+                    <div class="card section-card h-100"><div class="card-body text-center py-3"><h4 class="fw-bold text-primary mb-0">{{ overview.get('rows', 0) }}</h4><small class="text-muted">Total Rows</small></div></div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card section-card h-100"><div class="card-body text-center py-3"><h4 class="fw-bold text-primary mb-0">{{ overview.get('columns', 0) }}</h4><small class="text-muted">Total Columns</small></div></div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card section-card h-100"><div class="card-body text-center py-3"><h4 class="fw-bold text-primary mb-0">{{ overview.get('numeric_count', 0) }}</h4><small class="text-muted">Numeric Columns</small></div></div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card section-card h-100"><div class="card-body text-center py-3"><h4 class="fw-bold text-primary mb-0">{{ overview.get('categorical_count', 0) }}</h4><small class="text-muted">Categorical Columns</small></div></div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card section-card h-100"><div class="card-body text-center py-3"><h4 class="fw-bold text-secondary mb-0">{{ overview.get('date_count', 0) }}</h4><small class="text-muted">Date Columns</small></div></div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card section-card h-100"><div class="card-body text-center py-3"><h4 class="fw-bold text-secondary mb-0">{{ "%.1f"|format(overview.get('memory_kb', 0)) }} KB</h4><small class="text-muted">Dataset Size</small></div></div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card section-card h-100"><div class="card-body text-center py-3"><h4 class="fw-bold text-secondary mb-0">{{ "%.2f"|format(overview.get('memory_kb', 0)) }} KB</h4><small class="text-muted">Memory Usage</small></div></div>
                 </div>
             </div>
         </div>
+    </div>
 
-        {% if missing and missing.get('columns') %}
-        <div class="tab-pane fade" id="pane-missing">
+    <!-- ===== SECTION 2: Data Quality Summary ===== -->
+    <div class="card section-card mb-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 fw-bold"><i class="fas fa-clipboard-check text-primary me-2"></i>2. Data Quality Summary</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-2 col-6">
+                    <div class="card section-card h-100"><div class="card-body text-center py-3"><h4 class="fw-bold text-danger mb-0">{{ qs.get('total_missing', 0) }}</h4><small class="text-muted">Missing Values</small></div></div>
+                </div>
+                <div class="col-md-2 col-6">
+                    <div class="card section-card h-100"><div class="card-body text-center py-3"><h4 class="fw-bold text-primary mb-0">{{ qs.get('duplicate_count', 0) }}</h4><small class="text-muted">Duplicate Rows</small></div></div>
+                </div>
+                <div class="col-md-2 col-6">
+                    <div class="card section-card h-100"><div class="card-body text-center py-3"><h4 class="fw-bold text-primary mb-0">{{ outliers.values()|sum(attribute='outlier_count') }}</h4><small class="text-muted">Outlier Count</small></div></div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card section-card h-100"><div class="card-body text-center py-3">
+                        {% set qs_score = qs.get('score', 0) %}
+                        {% set qs_color = 'primary' if qs_score >= 90 else 'secondary' if qs_score >= 75 else 'danger' %}
+                        <h4 class="fw-bold text-{{ qs_color }} mb-0">{{ qs_score }}%</h4><small class="text-muted">Data Quality Score</small></div></div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card section-card h-100"><div class="card-body text-center py-3">
+                        {% set vstatus = 'Passed' if qs.get('score', 0) >= 70 else 'Review Needed' %}
+                        {% set vcolor = 'primary' if qs.get('score', 0) >= 70 else 'secondary' %}
+                        <h4 class="fw-bold text-{{ vcolor }} mb-0">{{ vstatus }}</h4><small class="text-muted">Validation Status</small></div></div>
+                </div>
+            </div>
+            {% if qs %}
+            <div class="row g-3 mt-2">
+                <div class="col-md-6">
+                    <div class="d-flex justify-content-between small mb-1"><span>Completeness</span><span>{{ qs.get('completeness', 0) }}%</span></div>
+                    <div class="progress mb-2" style="height:6px;"><div class="progress-bar" style="width:{{ qs.get('completeness', 0) }}%"></div></div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex justify-content-between small mb-1"><span>Outlier Score</span><span>{{ qs.get('outlier_score', 0) }}%</span></div>
+                    <div class="progress mb-2" style="height:6px;"><div class="progress-bar" style="width:{{ qs.get('outlier_score', 0) }}%"></div></div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ===== SECTION 3: Statistical Summary ===== -->
+    {% if stats %}
+    <div class="card section-card mb-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 fw-bold"><i class="fas fa-calculator text-primary me-2"></i>3. Statistical Summary</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-height:500px;">
+                <table class="table table-sm table-striped mb-0 stats-table">
+                    <thead class="table-dark sticky-top">
+                        <tr><th class="px-3">Column</th><th class="px-3">Count</th><th class="px-3">Mean</th><th class="px-3">Median</th><th class="px-3">Mode</th><th class="px-3">Std</th><th class="px-3">Min</th><th class="px-3">Max</th><th class="px-3">Q1</th><th class="px-3">Q3</th><th class="px-3">IQR</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for col, s in stats.items() %}
+                        <tr>
+                            <td class="px-3 fw-medium">{{ col }}</td>
+                            <td class="px-3">{{ s.count }}</td>
+                            <td class="px-3">{{ s.mean }}</td>
+                            <td class="px-3">{{ s.median }}</td>
+                            <td class="px-3">{{ s.mode if s.mode is not none else '-' }}</td>
+                            <td class="px-3">{{ s.std }}</td>
+                            <td class="px-3">{{ s.min }}</td>
+                            <td class="px-3">{{ s.max }}</td>
+                            <td class="px-3">{{ s.q1 }}</td>
+                            <td class="px-3">{{ s.q3 }}</td>
+                            <td class="px-3">{{ s.iqr }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card section-card mb-4">
+        <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold"><i class="fas fa-calculator text-primary me-2"></i>3. Statistical Summary</h5></div>
+        <div class="card-body"><p class="text-muted text-center py-3 mb-0">No numeric columns found for statistical analysis.</p></div>
+    </div>
+    {% endif %}
+
+    <!-- ===== SECTION 4: Missing Value Analysis ===== -->
+    <div class="card section-card mb-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 fw-bold"><i class="fas fa-exclamation-triangle text-danger me-2"></i>4. Missing Value Analysis</h5>
+        </div>
+        <div class="card-body">
+            {% if missing and missing.get('columns') and missing.columns|length > 0 %}
+            {% set cols_list = missing.columns %}
             <div class="row g-3 mb-4">
                 <div class="col-md-3 col-6"><div class="card section-card"><div class="card-body text-center py-3"><h4 class="fw-bold text-danger mb-0">{{ missing.total_missing }}</h4><small class="text-muted">Total Missing</small></div></div></div>
-                <div class="col-md-3 col-6"><div class="card section-card"><div class="card-body text-center py-3"><h4 class="fw-bold text-warning mb-0">{{ missing.overall_pct }}%</h4><small class="text-muted">Overall %</small></div></div></div>
-                <div class="col-md-3 col-6"><div class="card section-card"><div class="card-body text-center py-3"><h4 class="fw-bold text-info mb-0">{{ missing.total_cells }}</h4><small class="text-muted">Total Cells</small></div></div></div>
-                <div class="col-md-3 col-6"><div class="card section-card"><div class="card-body text-center py-3"><h4 class="fw-bold text-secondary mb-0">{{ missing.columns|length }}</h4><small class="text-muted">Affected Columns</small></div></div></div>
+                <div class="col-md-3 col-6"><div class="card section-card"><div class="card-body text-center py-3"><h4 class="fw-bold text-primary mb-0">{{ missing.overall_pct }}%</h4><small class="text-muted">Overall %</small></div></div></div>
+                <div class="col-md-3 col-6"><div class="card section-card"><div class="card-body text-center py-3"><h4 class="fw-bold text-primary mb-0">{{ missing.total_cells }}</h4><small class="text-muted">Total Cells</small></div></div></div>
+                <div class="col-md-3 col-6"><div class="card section-card"><div class="card-body text-center py-3"><h4 class="fw-bold text-secondary mb-0">{{ cols_list|length }}</h4><small class="text-muted">Affected Columns</small></div></div></div>
             </div>
-            {% set cols_list = missing.columns %}
-            {% set most_missing = cols_list|max(attribute='percentage') %}
-            {% set least_missing = cols_list|min(attribute='percentage') %}
-            <div class="row g-3 mb-4">
-                <div class="col-md-6"><div class="card section-card h-100"><div class="card-body"><h6 class="fw-bold text-danger"><i class="fas fa-arrow-up me-1"></i>Most Missing</h6><p class="mb-0"><strong>{{ most_missing.column }}</strong> — {{ most_missing.count }} missing ({{ most_missing.percentage }}%)</p></div></div></div>
-                <div class="col-md-6"><div class="card section-card h-100"><div class="card-body"><h6 class="fw-bold text-success"><i class="fas fa-arrow-down me-1"></i>Least Missing</h6><p class="mb-0"><strong>{{ least_missing.column }}</strong> — {{ least_missing.count }} missing ({{ least_missing.percentage }}%)</p></div></div></div>
-            </div>
-            <div class="card section-card mb-4">
-                <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold"><i class="fas fa-table me-2 text-danger"></i>Missing Values by Column</h5></div>
+            <div class="card section-card mb-3">
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-sm table-striped mb-0">
-                            <thead class="table-dark"><tr><th class="px-3">Column</th><th class="px-3">Missing Count</th><th class="px-3">Percentage</th></tr></thead>
+                            <thead class="table-dark"><tr><th class="px-3">Column</th><th class="px-3">Missing Count</th><th class="px-3">Missing %</th></tr></thead>
                             <tbody>
                                 {% for m in cols_list %}
-                                <tr><td class="px-3 fw-medium">{{ m.column }}</td><td class="px-3">{{ m.count }}</td><td class="px-3"><span class="badge bg-{{ 'danger' if m.percentage > 20 else 'warning' if m.percentage > 5 else 'secondary' }}">{{ m.percentage }}%</span></td></tr>
+                                <tr><td class="px-3 fw-medium">{{ m.column }}</td><td class="px-3">{{ m.count }}</td><td class="px-3"><span class="badge bg-{{ 'danger' if m.percentage > 20 else 'secondary' if m.percentage > 5 else 'secondary' }}">{{ m.percentage }}%</span></td></tr>
                                 {% endfor %}
                             </tbody>
                         </table>
@@ -150,82 +200,119 @@
             </div>
             {% set missing_chart = charts.get('missing', {}) %}
             {% if missing_chart and missing_chart.get('plotly') %}
-            <div class="card section-card mb-4">
-                <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold"><i class="fas fa-chart-bar me-2 text-danger"></i>Missing Values Chart</h5></div>
+            <div class="card section-card mb-3">
+                <div class="card-header bg-white py-2"><h6 class="mb-0 fw-bold small"><i class="fas fa-chart-bar me-1 text-danger"></i>Missing Bar Chart</h6></div>
                 <div class="card-body"><div id="missingChart" class="chart-container"></div></div>
             </div>
             {% endif %}
-        </div>
-        {% endif %}
-
-        {% if outliers %}
-        <div class="tab-pane fade" id="pane-outliers">
-            <div class="row g-3 mb-4">
-                <div class="col-md-3 col-6"><div class="card section-card"><div class="card-body text-center py-3"><h4 class="fw-bold text-warning mb-0">{{ outliers|length }}</h4><small class="text-muted">Columns Analyzed</small></div></div></div>
-                <div class="col-md-3 col-6"><div class="card section-card"><div class="card-body text-center py-3"><h4 class="fw-bold text-danger mb-0">{{ outliers.values()|selectattr('outlier_count', 'gt', 0)|list|length }}</h4><small class="text-muted">With Outliers</small></div></div></div>
-                <div class="col-md-3 col-6"><div class="card section-card"><div class="card-body text-center py-3"><h4 class="fw-bold text-info mb-0">{{ outliers.values()|sum(attribute='outlier_count') }}</h4><small class="text-muted">Total Outliers</small></div></div></div>
-                <div class="col-md-3 col-6"><div class="card section-card"><div class="card-body text-center py-3"><h4 class="fw-bold text-secondary mb-0">IQR</h4><small class="text-muted">Method</small></div></div></div>
-            </div>
-            <div class="card section-card mb-4">
-                <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold"><i class="fas fa-table me-2 text-warning"></i>Outlier Detection (IQR Method)</h5></div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-striped mb-0">
-                            <thead class="table-dark"><tr><th class="px-3">Column</th><th class="px-3">Outliers</th><th class="px-3">%</th><th class="px-3">Lower Bound</th><th class="px-3">Upper Bound</th></tr></thead>
-                            <tbody>
-                                {% for col, o in outliers.items() %}
-                                <tr><td class="px-3 fw-medium">{{ col }}</td><td class="px-3">{{ o.outlier_count }}</td><td class="px-3"><span class="badge bg-{{ 'danger' if o.outlier_pct > 5 else 'warning' if o.outlier_pct > 0 else 'secondary' }}">{{ o.outlier_pct }}%</span></td><td class="px-3">{{ o.lower_bound }}</td><td class="px-3">{{ o.upper_bound }}</td></tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            {% set boxplots = charts.get('boxplots', []) %}
-            {% if boxplots %}
-            <div class="card section-card mb-4">
-                <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold"><i class="fas fa-chart-box me-2 text-warning"></i>Box Plots</h5></div>
-                <div class="card-body">
-                    <div class="row">
-                        {% for b in boxplots %}
-                        <div class="col-md-6 mb-3">{% if b.plotly %}<div id="chart-box-{{ loop.index }}" class="chart-container"></div>{% endif %}</div>
-                        {% endfor %}
-                    </div>
-                </div>
+            {% set missing_heat = charts.get('missing_heatmap', {}) %}
+            {% if missing_heat and missing_heat.get('plotly') %}
+            <div class="card section-card">
+                <div class="card-header bg-white py-2"><h6 class="mb-0 fw-bold small"><i class="fas fa-th me-1 text-danger"></i>Missing Heatmap</h6></div>
+                <div class="card-body"><div id="missingHeatmap" class="chart-container" style="min-height:300px;"></div></div>
             </div>
             {% endif %}
+            {% else %}
+            <p class="text-muted text-center py-3 mb-0"><i class="fas fa-check-circle text-primary me-2"></i>No missing values detected in the dataset.</p>
+            {% endif %}
         </div>
-        {% endif %}
+    </div>
 
-        {% if corr and corr.get('columns') and corr.columns|length > 1 %}
-        <div class="tab-pane fade" id="pane-correlation">
+    <!-- ===== SECTION 5: Column Type Summary ===== -->
+    <div class="card section-card mb-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 fw-bold"><i class="fas fa-tags text-primary me-2"></i>5. Column Type Summary</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                {% for type_key, type_label, type_bg in [('numeric', 'Numeric', '#EFF6FF'), ('categorical', 'Categorical', '#F1F5F9'), ('date', 'Date', '#EFF6FF'), ('boolean', 'Boolean', '#F8FAFC')] %}
+                <div class="col-md-3">
+                    <div class="p-3 rounded" style="background:{{ type_bg }};">
+                        <h6 class="fw-bold text-primary mb-2"><i class="fas fa-{{ 'calculator' if type_key == 'numeric' else 'font' if type_key == 'categorical' else 'calendar' if type_key == 'date' else 'toggle-on' }} me-1"></i>{{ type_label }} ({{ col_types.get(type_key, [])|length }})</h6>
+                        {% if col_types.get(type_key) %}
+                        <div class="d-flex flex-wrap gap-1">{% for c in col_types[type_key] %}<span class="badge bg-primary bg-opacity-10 text-primary small">{{ c }}</span>{% endfor %}</div>
+                        {% else %}<p class="small text-muted mb-0">None</p>{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== SECTION 6: Distribution Analysis ===== -->
+    <div class="card section-card mb-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 fw-bold"><i class="fas fa-chart-bar text-primary me-2"></i>6. Distribution Analysis</h5>
+        </div>
+        <div class="card-body">
+            {% set histograms = charts.get('histograms', []) %}
+            {% set density_charts = charts.get('density', []) %}
+            {% set boxplot_charts = charts.get('boxplots', []) %}
+            {% set has_dist_charts = histograms or density_charts or boxplot_charts %}
+
+            {% if has_dist_charts %}
+            {% if histograms %}
+            <h6 class="fw-bold mb-3"><i class="fas fa-chart-bar text-primary me-2"></i>Histograms</h6>
+            <div class="row mb-4">
+                {% for h in histograms %}
+                <div class="col-md-6 mb-3">{% if h.plotly %}<div id="chart-hist-{{ loop.index }}" class="chart-container"></div>{% endif %}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% if density_charts %}
+            <h6 class="fw-bold mb-3"><i class="fas fa-wave-square text-primary me-2"></i>Density Plots</h6>
+            <div class="row mb-4">
+                {% for d in density_charts %}
+                <div class="col-md-6 mb-3">{% if d.plotly %}<div id="chart-density-{{ loop.index }}" class="chart-container"></div>{% endif %}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% if boxplot_charts %}
+            <h6 class="fw-bold mb-3"><i class="fas fa-chart-box text-primary me-2"></i>Box Plots</h6>
+            <div class="row">
+                {% for b in boxplot_charts %}
+                <div class="col-md-6 mb-3">{% if b.plotly %}<div id="chart-box-{{ loop.index }}" class="chart-container"></div>{% endif %}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% else %}
+            <p class="text-muted text-center py-3 mb-0">No distribution charts available. Numeric columns are required.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ===== SECTION 7: Correlation Analysis ===== -->
+    <div class="card section-card mb-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 fw-bold"><i class="fas fa-th text-primary me-2"></i>7. Correlation Analysis</h5>
+        </div>
+        <div class="card-body">
+            {% if corr and corr.get('columns') and corr.columns|length > 1 %}
             <div class="row g-3 mb-4">
                 <div class="col-md-4 col-6"><div class="card section-card"><div class="card-body text-center py-3"><h4 class="fw-bold text-primary mb-0">{{ corr.columns|length }}</h4><small class="text-muted">Numeric Features</small></div></div></div>
-                <div class="col-md-4 col-6"><div class="card section-card"><div class="card-body text-center py-3"><h4 class="fw-bold text-success mb-0">{{ corr.get('high_corr', [])|length }}</h4><small class="text-muted">Strong Correlations</small></div></div></div>
-                <div class="col-md-4 col-6"><div class="card section-card"><div class="card-body text-center py-3"><h4 class="fw-bold text-info mb-0">{{ corr.get('pairs', [])|length }}</h4><small class="text-muted">Total Pairs</small></div></div></div>
+                <div class="col-md-4 col-6"><div class="card section-card"><div class="card-body text-center py-3"><h4 class="fw-bold text-primary mb-0">{{ corr.get('high_corr', [])|length }}</h4><small class="text-muted">Strong Correlations</small></div></div></div>
+                <div class="col-md-4 col-6"><div class="card section-card"><div class="card-body text-center py-3"><h4 class="fw-bold text-primary mb-0">{{ corr.get('pairs', [])|length }}</h4><small class="text-muted">Total Pairs</small></div></div></div>
             </div>
             <div class="row g-4 mb-4">
                 <div class="col-lg-7">
+                    {% set corr_chart = charts.get('correlation', {}) %}
+                    {% if corr_chart and corr_chart.get('plotly') %}
                     <div class="card section-card h-100">
-                        <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold"><i class="fas fa-th me-2 text-primary"></i>Correlation Heatmap</h5></div>
-                        <div class="card-body">
-                            {% set corr_chart = charts.get('correlation', {}) %}
-                            {% if corr_chart and corr_chart.get('plotly') %}
-                            <div id="correlationChart" class="chart-container"></div>
-                            {% else %}<p class="text-muted text-center py-4">Heatmap not available</p>{% endif %}
-                        </div>
+                        <div class="card-header bg-white py-2"><h6 class="mb-0 fw-bold small"><i class="fas fa-th me-1 text-primary"></i>Correlation Matrix Heatmap</h6></div>
+                        <div class="card-body"><div id="correlationChart" class="chart-container"></div></div>
                     </div>
+                    {% endif %}
                 </div>
                 <div class="col-lg-5">
                     <div class="card section-card h-100">
-                        <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold text-info"><i class="fas fa-link me-2"></i>Top Correlations</h5></div>
+                        <div class="card-header bg-white py-2"><h6 class="mb-0 fw-bold small"><i class="fas fa-link me-1 text-primary"></i>Top Correlations</h6></div>
                         <div class="card-body p-0">
                             <div class="table-responsive" style="max-height:450px;">
                                 <table class="table table-sm mb-0">
                                     <thead class="table-light"><tr><th class="px-3">Feature 1</th><th class="px-3">Feature 2</th><th class="text-end px-3">Value</th></tr></thead>
                                     <tbody>
                                         {% for p in corr.get('pairs', [])[:20] %}
-                                        <tr><td class="px-3">{{ p.col1 }}</td><td class="px-3">{{ p.col2 }}</td><td class="text-end px-3"><span class="badge bg-{{ 'success' if p.value > 0.5 else 'danger' if p.value < -0.5 else 'secondary' }}">{{ p.value }}</span></td></tr>
+                                        <tr><td class="px-3">{{ p.col1 }}</td><td class="px-3">{{ p.col2 }}</td><td class="text-end px-3"><span class="badge bg-{{ 'primary' if p.value > 0.5 else 'danger' if p.value < -0.5 else 'secondary' }}">{{ p.value }}</span></td></tr>
                                         {% endfor %}
                                     </tbody>
                                 </table>
@@ -236,273 +323,340 @@
             </div>
             {% set pos = corr.get('high_corr', [])|selectattr('value', 'gt', 0)|list %}
             {% set neg = corr.get('high_corr', [])|selectattr('value', 'lt', 0)|list %}
-            {% if pos or neg %}
-            <div class="row g-3 mb-4">
-                {% if pos %}
-                <div class="col-md-6"><div class="card section-card h-100 border-success"><div class="card-body"><h6 class="fw-bold text-success"><i class="fas fa-plus-circle me-1"></i>Strong Positive Correlations (r {{ '>= 0.7' }})</h6><p class="small mb-0 text-muted">{{ pos|length }} pairs found. Consider feature selection to reduce multicollinearity.</p><ul class="small mb-0 mt-2">{% for p in pos[:5] %}<li><strong>{{ p.col1 }}</strong> ↔ <strong>{{ p.col2 }}</strong> (r={{ p.value }})</li>{% endfor %}</ul></div></div></div>
-                {% endif %}
-                {% if neg %}
-                <div class="col-md-6"><div class="card section-card h-100 border-danger"><div class="card-body"><h6 class="fw-bold text-danger"><i class="fas fa-minus-circle me-1"></i>Strong Negative Correlations (r {{ '<= -0.7' }})</h6><p class="small mb-0 text-muted">{{ neg|length }} pairs found. Inverse relationships detected.</p><ul class="small mb-0 mt-2">{% for p in neg[:5] %}<li><strong>{{ p.col1 }}</strong> ↔ <strong>{{ p.col2 }}</strong> (r={{ p.value }})</li>{% endfor %}</ul></div></div></div>
-                {% endif %}
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="card section-card h-100 border-primary">
+                        <div class="card-body">
+                            <h6 class="fw-bold text-primary"><i class="fas fa-plus-circle me-1"></i>Strongest Positive Correlations</h6>
+                            {% if pos %}<ul class="small mb-0 mt-2">{% for p in pos[:5] %}<li><strong>{{ p.col1 }}</strong> ↔ <strong>{{ p.col2 }}</strong> (r={{ p.value }})</li>{% endfor %}</ul>
+                            {% else %}<p class="small text-muted mb-0 mt-2">None above 0.7 threshold.</p>{% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card section-card h-100 border-danger">
+                        <div class="card-body">
+                            <h6 class="fw-bold text-danger"><i class="fas fa-minus-circle me-1"></i>Strongest Negative Correlations</h6>
+                            {% if neg %}<ul class="small mb-0 mt-2">{% for p in neg[:5] %}<li><strong>{{ p.col1 }}</strong> ↔ <strong>{{ p.col2 }}</strong> (r={{ p.value }})</li>{% endfor %}</ul>
+                            {% else %}<p class="small text-muted mb-0 mt-2">None below -0.7 threshold.</p>{% endif %}
+                        </div>
+                    </div>
+                </div>
             </div>
+            {% else %}
+            <p class="text-muted text-center py-3 mb-0">Correlation analysis requires at least 2 numeric columns.</p>
             {% endif %}
         </div>
-        {% endif %}
+    </div>
 
-        {% if stats %}
-        <div class="tab-pane fade" id="pane-distribution">
-            <div class="card section-card mb-4">
-                <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold"><i class="fas fa-calculator me-2 text-primary"></i>Statistical Summary</h5></div>
+    <!-- ===== SECTION 8: Outlier Analysis ===== -->
+    <div class="card section-card mb-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 fw-bold"><i class="fas fa-chart-box text-primary me-2"></i>8. Outlier Analysis</h5>
+        </div>
+        <div class="card-body">
+            {% if outliers %}
+            <div class="row g-3 mb-4">
+                <div class="col-md-3 col-6"><div class="card section-card"><div class="card-body text-center py-3"><h4 class="fw-bold text-primary mb-0">{{ outliers|length }}</h4><small class="text-muted">Columns Analyzed</small></div></div></div>
+                <div class="col-md-3 col-6"><div class="card section-card"><div class="card-body text-center py-3"><h4 class="fw-bold text-danger mb-0">{{ outliers.values()|selectattr('outlier_count', 'gt', 0)|list|length }}</h4><small class="text-muted">With Outliers</small></div></div></div>
+                <div class="col-md-3 col-6"><div class="card section-card"><div class="card-body text-center py-3"><h4 class="fw-bold text-primary mb-0">{{ outliers.values()|sum(attribute='outlier_count') }}</h4><small class="text-muted">Total Outliers</small></div></div></div>
+                <div class="col-md-3 col-6"><div class="card section-card"><div class="card-body text-center py-3"><h4 class="fw-bold text-secondary mb-0">IQR</h4><small class="text-muted">Method</small></div></div></div>
+            </div>
+            {% set boxplots = charts.get('boxplots', []) %}
+            {% if boxplots %}
+            <h6 class="fw-bold mb-3"><i class="fas fa-chart-box text-primary me-2"></i>Boxplots by Column</h6>
+            <div class="row mb-4">
+                {% for b in boxplots %}
+                <div class="col-md-6 mb-3">{% if b.plotly %}<div id="outlier-box-{{ loop.index }}" class="chart-container"></div>{% endif %}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="card section-card">
                 <div class="card-body p-0">
-                    <div class="table-responsive" style="max-height:500px;">
-                        <table class="table table-sm table-striped mb-0 stats-table">
-                            <thead class="table-dark sticky-top">
-                                <tr><th class="px-3">Column</th><th class="px-3">Count</th><th class="px-3">Mean</th><th class="px-3">Median</th><th class="px-3">Mode</th><th class="px-3">Std</th><th class="px-3">Variance</th><th class="px-3">Min</th><th class="px-3">Max</th><th class="px-3">Q1</th><th class="px-3">Q3</th><th class="px-3">IQR</th><th class="px-3">Skewness</th><th class="px-3">Kurtosis</th></tr>
-                            </thead>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped mb-0">
+                            <thead class="table-dark"><tr><th class="px-3">Column</th><th class="px-3">Outlier Count</th><th class="px-3">Outlier %</th><th class="px-3">Lower Bound</th><th class="px-3">Upper Bound</th></tr></thead>
                             <tbody>
-                                {% for col, s in stats.items() %}
-                                <tr>
-                                    <td class="px-3 fw-medium">{{ col }}</td>
-                                    <td class="px-3">{{ s.count }}</td>
-                                    <td class="px-3">{{ s.mean }}</td>
-                                    <td class="px-3">{{ s.median }}</td>
-                                    <td class="px-3">{{ s.mode if s.mode is not none else '-' }}</td>
-                                    <td class="px-3">{{ s.std }}</td>
-                                    <td class="px-3">{{ s.variance }}</td>
-                                    <td class="px-3">{{ s.min }}</td>
-                                    <td class="px-3">{{ s.max }}</td>
-                                    <td class="px-3">{{ s.q1 }}</td>
-                                    <td class="px-3">{{ s.q3 }}</td>
-                                    <td class="px-3">{{ s.iqr }}</td>
-                                    <td class="px-3"><span class="badge bg-{{ 'danger' if s.skewness > 1 or s.skewness < -1 else 'warning' if s.skewness > 0.5 or s.skewness < -0.5 else 'secondary' }}">{{ s.skewness }}</span></td>
-                                    <td class="px-3">{{ s.kurtosis if s.kurtosis is defined else '-' }}</td>
-                                </tr>
+                                {% for col, o in outliers.items() %}
+                                <tr><td class="px-3 fw-medium">{{ col }}</td><td class="px-3">{{ o.outlier_count }}</td><td class="px-3"><span class="badge bg-{{ 'danger' if o.outlier_pct > 5 else 'secondary' if o.outlier_pct > 0 else 'secondary' }}">{{ o.outlier_pct }}%</span></td><td class="px-3">{{ o.lower_bound }}</td><td class="px-3">{{ o.upper_bound }}</td></tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
-            {% set histograms = charts.get('histograms', []) %}
-            {% if histograms %}
-            <div class="card section-card mb-4">
-                <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold"><i class="fas fa-chart-bar me-2 text-primary"></i>Histograms</h5></div>
-                <div class="card-body">
-                    <div class="row">
-                        {% for h in histograms %}
-                        <div class="col-md-6 mb-3">{% if h.plotly %}<div id="chart-hist-{{ loop.index }}" class="chart-container"></div>{% endif %}</div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-            {% set bars = charts.get('bar', []) %}
-            {% if bars %}
-            <div class="card section-card mb-4">
-                <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold text-success"><i class="fas fa-chart-simple me-2"></i>Categorical Bar Charts</h5></div>
-                <div class="card-body">
-                    <div class="row">
-                        {% for b in bars %}
-                        <div class="col-md-6 mb-3">{% if b.plotly %}<div id="chart-bar-{{ loop.index }}" class="chart-container"></div>{% endif %}</div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-            {% set pies = charts.get('pie', []) %}
-            {% if pies %}
-            <div class="card section-card mb-4">
-                <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold text-info"><i class="fas fa-chart-pie me-2"></i>Pie Charts</h5></div>
-                <div class="card-body">
-                    <div class="row">
-                        {% for p in pies %}
-                        <div class="col-md-6 mb-3">{% if p.plotly %}<div id="chart-pie-{{ loop.index }}" class="chart-container"></div>{% endif %}</div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
+            {% else %}
+            <p class="text-muted text-center py-3 mb-0">No numeric columns available for outlier analysis.</p>
             {% endif %}
         </div>
-        {% endif %}
+    </div>
 
-        {% if ts and ts.get('value_column') %}
-        <div class="tab-pane fade" id="pane-timeseries">
+    <!-- ===== SECTION 9: Time Series Analysis ===== -->
+    <div class="card section-card mb-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 fw-bold"><i class="fas fa-chart-line text-primary me-2"></i>9. Time Series Analysis</h5>
+        </div>
+        <div class="card-body">
+            {% if ts and ts.get('date_column') and ts.get('value_column') %}
             <div class="row g-3 mb-4">
                 <div class="col-md-3 col-6"><div class="card section-card"><div class="card-body text-center py-3"><h6 class="fw-bold mb-0">{{ ts.date_column }}</h6><small class="text-muted">Date Column</small></div></div></div>
                 <div class="col-md-3 col-6"><div class="card section-card"><div class="card-body text-center py-3"><h6 class="fw-bold mb-0">{{ ts.value_column }}</h6><small class="text-muted">Value Column</small></div></div></div>
-                <div class="col-md-3 col-6"><div class="card section-card"><div class="card-body text-center py-3"><h6 class="fw-bold mb-0">{{ ts.date_min }} — {{ ts.date_max }}</h6><small class="text-muted">Date Range</small></div></div></div>
-                <div class="col-md-3 col-6"><div class="card section-card"><div class="card-body text-center py-3"><h6 class="fw-bold mb-0">{{ ts.frequency }}</h6><small class="text-muted">Frequency</small></div></div></div>
+                <div class="col-md-3 col-6"><div class="card section-card"><div class="card-body text-center py-3"><h6 class="fw-bold mb-0">{{ ts.get('date_min', '') }} — {{ ts.get('date_max', '') }}</h6><small class="text-muted">Date Range</small></div></div></div>
+                <div class="col-md-3 col-6"><div class="card section-card"><div class="card-body text-center py-3"><h6 class="fw-bold mb-0">{{ ts.get('frequency', 'N/A') }}</h6><small class="text-muted">Frequency</small></div></div></div>
             </div>
-            {% set trend_chart = charts.get('trend', {}) %}
-            {% if trend_chart and trend_chart.get('plotly') %}
-            <div class="card section-card mb-4">
-                <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold"><i class="fas fa-chart-line me-2 text-info"></i>Trend Analysis</h5></div>
+            {% set trend = charts.get('trend', {}) %}
+            {% if trend and trend.get('plotly') %}
+            <div class="card section-card mb-3">
+                <div class="card-header bg-white py-2"><h6 class="mb-0 fw-bold small"><i class="fas fa-chart-line me-1 text-primary"></i>Trend Chart</h6></div>
                 <div class="card-body"><div id="trendChart" class="chart-container"></div></div>
             </div>
             {% endif %}
-            {% if ts.get('total_points') %}
+            {% set roll_avg = charts.get('rolling_avg', {}) %}
+            {% if roll_avg and roll_avg.get('plotly') %}
             <div class="card section-card">
-                <div class="card-body"><p class="mb-0 small text-muted"><i class="fas fa-info-circle me-1"></i>{{ ts.total_points }} data points analyzed. {% if ts.frequency and ts.frequency != 'Irregular' %}Seasonal patterns detected at {{ ts.frequency }} frequency.{% else %}No clear seasonal pattern detected.{% endif %}</p></div>
+                <div class="card-header bg-white py-2"><h6 class="mb-0 fw-bold small"><i class="fas fa-wave-square me-1 text-danger"></i>Rolling Average</h6></div>
+                <div class="card-body"><div id="rollingAvgChart" class="chart-container"></div></div>
             </div>
             {% endif %}
-        </div>
-        {% endif %}
-
-        {% if cat or insights %}
-        <div class="tab-pane fade" id="pane-insights">
-            <div class="row g-4 mb-4">
-                {% if insights.get('potential_targets') %}
-                <div class="col-md-4"><div class="card section-card h-100 border-primary"><div class="card-body"><h6 class="fw-bold text-primary"><i class="fas fa-bullseye me-1"></i>Potential Targets</h6><p class="small mb-0">{{ insights.potential_targets|join(', ') }}</p><hr class="my-2"><small class="text-muted">These columns have sufficient variance for regression tasks.</small></div></div></div>
-                {% endif %}
-                {% if insights.get('highly_correlated_pairs') %}
-                <div class="col-md-4"><div class="card section-card h-100 border-info"><div class="card-body"><h6 class="fw-bold text-info"><i class="fas fa-link me-1"></i>High Correlations</h6><p class="small mb-0">{{ insights.highly_correlated_pairs|length }} pairs with |r| >= 0.7</p><hr class="my-2"><small class="text-muted">Consider removing redundant features to reduce multicollinearity.</small></div></div></div>
-                {% endif %}
-                {% if insights.get('many_outliers_features') %}
-                <div class="col-md-4"><div class="card section-card h-100 border-warning"><div class="card-body"><h6 class="fw-bold text-warning"><i class="fas fa-exclamation me-1"></i>Outlier Features</h6><p class="small mb-0">{{ insights.many_outliers_features|length }} columns with >5% outliers</p><hr class="my-2"><small class="text-muted">Consider capping or transformation for robust modeling.</small></div></div></div>
-                {% endif %}
-            </div>
-            {% if cat %}
-            <div class="card section-card mb-4">
-                <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold text-success"><i class="fas fa-tag me-2"></i>Categorical Analysis</h5></div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        {% for col, c in cat.items() %}
-                        <div class="col-md-4 col-lg-3">
-                            <div class="p-3 bg-light rounded h-100">
-                                <h6 class="fw-bold small">{{ col }}</h6>
-                                <p class="mb-1 small">{{ c.unique_count }} unique values</p>
-                                <p class="mb-0 small">Top: <strong>{{ c.top_value }}</strong> ({{ c.top_freq }})</p>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
+            {% if ts.get('frequency') %}
+            <div class="mt-3"><p class="mb-0 small text-muted"><i class="fas fa-info-circle me-1"></i>{{ ts.total_points }} data points analyzed. {% if ts.get('frequency') and ts.frequency != 'Irregular' %}Seasonal pattern may be present at {{ ts.frequency }} frequency.{% endif %}</p></div>
             {% endif %}
-            <div class="card section-card">
-                <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold"><i class="fas fa-clipboard-check me-2 text-primary"></i>Data Quality Summary</h5></div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-3"><div class="text-center p-3 bg-light rounded"><h5 class="fw-bold text-primary mb-0">{{ overview.get('rows', 0) }}</h5><small class="text-muted">Total Records</small></div></div>
-                        <div class="col-md-3"><div class="text-center p-3 bg-light rounded"><h5 class="fw-bold text-info mb-0">{{ overview.get('columns', 0) }}</h5><small class="text-muted">Total Features</small></div></div>
-                        <div class="col-md-3"><div class="text-center p-3 bg-light rounded"><h5 class="fw-bold text-success mb-0">{{ overview.get('numeric_count', 0) }}</h5><small class="text-muted">Numeric Features</small></div></div>
-                        <div class="col-md-3"><div class="text-center p-3 bg-light rounded"><h5 class="fw-bold text-warning mb-0">{{ overview.get('categorical_count', 0) }}</h5><small class="text-muted">Categorical Features</small></div></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
-        <div class="tab-pane fade" id="pane-report">
-            <div class="row g-4 mb-4">
-                <div class="col-md-6">
-                    <div class="card section-card h-100 text-center">
-                        <div class="card-body py-5">
-                            <i class="fas fa-file-pdf text-danger" style="font-size:3rem;"></i>
-                            <h5 class="fw-bold mt-3">Generate EDA Report</h5>
-                            <p class="text-muted small">Create a comprehensive HTML report with all EDA results, charts, and insights.</p>
-                            <form method="POST" action="{{ url_for('eda.generate_report', dataset_id=dataset.id) }}">
-                                <button type="submit" class="btn btn-danger"><i class="fas fa-file-pdf me-1"></i>Generate Report</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card section-card h-100 text-center">
-                        <div class="card-body py-5">
-                            <i class="fas fa-chart-pie text-primary" style="font-size:3rem;"></i>
-                            <h5 class="fw-bold mt-3">EDA Summary</h5>
-                            <p class="text-muted small">View a condensed summary of all EDA analysis results in a single page.</p>
-                            <a href="{{ url_for('eda.eda_summary', dataset_id=dataset.id) }}" class="btn btn-outline-primary"><i class="fas fa-file-alt me-1"></i>View Summary</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row g-4 mb-4">
-                <div class="col-md-6">
-                    <div class="card section-card h-100 text-center">
-                        <div class="card-body py-5">
-                            <i class="fas fa-images text-info" style="font-size:3rem;"></i>
-                            <h5 class="fw-bold mt-3">Chart Gallery</h5>
-                            <p class="text-muted small">Browse all EDA visualization charts in a dedicated gallery view.</p>
-                            <a href="{{ url_for('eda.eda_charts', dataset_id=dataset.id) }}" class="btn btn-outline-info"><i class="fas fa-images me-1"></i>View Charts</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card section-card h-100 text-center">
-                        <div class="card-body py-5">
-                            <i class="fas fa-redo text-warning" style="font-size:3rem;"></i>
-                            <h5 class="fw-bold mt-3">Re-run EDA</h5>
-                            <p class="text-muted small">Run EDA analysis again from the beginning.</p>
-                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#edaRerunModal"><i class="fas fa-redo me-1"></i>Run Again</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </div>
-</div>
-<div class="modal fade" id="edaRerunModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header border-0">
-                <h5 class="modal-title fw-bold"><i class="fas fa-exclamation-triangle text-warning me-2"></i>Confirm Re-run</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body text-center py-4">
-                <i class="fas fa-redo fa-3x text-warning mb-3"></i>
-                <p class="fw-bold mb-2">This will overwrite the existing results.</p>
-                <p class="text-muted small mb-0">All current EDA results will be lost. This action cannot be undone.</p>
-            </div>
-            <div class="modal-footer border-0 justify-content-center">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <a href="{{ url_for('eda.mode_selection', dataset_id=dataset.id) }}" class="btn btn-danger">
-                    <i class="fas fa-redo me-1"></i>Run Again
-                </a>
-            </div>
+            {% elif ts and ts.get('msg') %}
+            <p class="text-muted text-center py-3 mb-0"><i class="fas fa-info-circle me-2"></i>{{ ts.msg }}</p>
+            {% else %}
+            <p class="text-muted text-center py-3 mb-0"><i class="fas fa-clock me-2"></i>No valid timestamp column detected. Time series analysis is not available for this dataset.</p>
+            {% endif %}
         </div>
     </div>
+
+    <!-- ===== SECTION 10: Smart Insights ===== -->
+    <div class="card section-card mb-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 fw-bold"><i class="fas fa-lightbulb text-primary me-2"></i>10. Smart Insights</h5>
+        </div>
+        <div class="card-body">
+            {% if si %}
+            <div class="row g-3">
+                {% for item in si %}
+                <div class="col-md-6">
+                    <div class="d-flex align-items-start p-3 rounded" style="background:#F8FAFC;">
+                        <div class="insight-icon bg-primary bg-opacity-10 text-primary me-3"><i class="fas {{ item.icon }}"></i></div>
+                        <div><h6 class="mb-1 fw-bold small">{{ item.title }}</h6><p class="mb-0 small text-muted">{{ item.text }}</p></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-3 mb-0">No insights available. Run EDA analysis first.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ===== SECTION 11: Charts Gallery ===== -->
+    <div class="card section-card mb-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 fw-bold"><i class="fas fa-images text-primary me-2"></i>11. Charts Gallery</h5>
+        </div>
+        <div class="card-body">
+            {% set corr_chart_g = charts.get('correlation', {}) %}
+            {% set miss_chart_g = charts.get('missing', {}) %}
+            {% set miss_heat_g = charts.get('missing_heatmap', {}) %}
+            {% set trend_g = charts.get('trend', {}) %}
+            {% set roll_g = charts.get('rolling_avg', {}) %}
+            {% set hist_g = charts.get('histograms', []) %}
+            {% set dens_g = charts.get('density', []) %}
+            {% set box_g = charts.get('boxplots', []) %}
+            {% set bar_g = charts.get('bar', []) %}
+            {% set pie_g = charts.get('pie', []) %}
+
+            {% set has_any_chart = corr_chart_g.get('plotly') or miss_chart_g.get('plotly') or miss_heat_g.get('plotly') or trend_g.get('plotly') or roll_g.get('plotly') or hist_g or dens_g or box_g or bar_g or pie_g %}
+            {% if has_any_chart %}
+            <div class="row g-3">
+                {% if corr_chart_g and corr_chart_g.get('plotly') %}
+                <div class="col-lg-6"><div class="card section-card h-100"><div class="card-header bg-white py-2"><h6 class="mb-0 fw-bold small"><i class="fas fa-th text-primary me-1"></i>Correlation Heatmap</h6></div><div class="card-body"><div id="gallery-correlation" class="chart-container"></div></div></div></div>
+                {% endif %}
+                {% if miss_chart_g and miss_chart_g.get('plotly') %}
+                <div class="col-lg-6"><div class="card section-card h-100"><div class="card-header bg-white py-2"><h6 class="mb-0 fw-bold small text-danger"><i class="fas fa-exclamation-triangle me-1"></i>Missing Values</h6></div><div class="card-body"><div id="gallery-missing" class="chart-container"></div></div></div></div>
+                {% endif %}
+                {% if miss_heat_g and miss_heat_g.get('plotly') %}
+                <div class="col-lg-6"><div class="card section-card h-100"><div class="card-header bg-white py-2"><h6 class="mb-0 fw-bold small text-danger"><i class="fas fa-th me-1"></i>Missing Heatmap</h6></div><div class="card-body"><div id="gallery-missing-heat" class="chart-container" style="min-height:300px;"></div></div></div></div>
+                {% endif %}
+                {% if trend_g and trend_g.get('plotly') %}
+                <div class="col-lg-6"><div class="card section-card h-100"><div class="card-header bg-white py-2"><h6 class="mb-0 fw-bold small"><i class="fas fa-chart-line text-primary me-1"></i>Trend</h6></div><div class="card-body"><div id="gallery-trend" class="chart-container"></div></div></div></div>
+                {% endif %}
+                {% if roll_g and roll_g.get('plotly') %}
+                <div class="col-lg-6"><div class="card section-card h-100"><div class="card-header bg-white py-2"><h6 class="mb-0 fw-bold small text-danger"><i class="fas fa-wave-square me-1"></i>Rolling Avg</h6></div><div class="card-body"><div id="gallery-rolling" class="chart-container"></div></div></div></div>
+                {% endif %}
+                {% for h in hist_g %}
+                <div class="col-lg-6"><div class="card section-card h-100"><div class="card-header bg-white py-2"><h6 class="mb-0 fw-bold small"><i class="fas fa-chart-bar text-primary me-1"></i>Histogram: {{ h.column }}</h6></div><div class="card-body"><div id="gallery-hist-{{ loop.index }}" class="chart-container"></div></div></div></div>
+                {% endfor %}
+                {% for d in dens_g %}
+                <div class="col-lg-6"><div class="card section-card h-100"><div class="card-header bg-white py-2"><h6 class="mb-0 fw-bold small"><i class="fas fa-wave-square text-primary me-1"></i>Density: {{ d.column }}</h6></div><div class="card-body"><div id="gallery-density-{{ loop.index }}" class="chart-container"></div></div></div></div>
+                {% endfor %}
+                {% for b in box_g %}
+                <div class="col-lg-6"><div class="card section-card h-100"><div class="card-header bg-white py-2"><h6 class="mb-0 fw-bold small"><i class="fas fa-chart-box text-primary me-1"></i>Boxplot: {{ b.column }}</h6></div><div class="card-body"><div id="gallery-box-{{ loop.index }}" class="chart-container"></div></div></div></div>
+                {% endfor %}
+                {% for b in bar_g %}
+                <div class="col-lg-6"><div class="card section-card h-100"><div class="card-header bg-white py-2"><h6 class="mb-0 fw-bold small"><i class="fas fa-chart-simple text-primary me-1"></i>{{ b.column }}</h6></div><div class="card-body"><div id="gallery-bar-{{ loop.index }}" class="chart-container"></div></div></div></div>
+                {% endfor %}
+                {% for p in pie_g %}
+                <div class="col-lg-6"><div class="card section-card h-100"><div class="card-header bg-white py-2"><h6 class="mb-0 fw-bold small"><i class="fas fa-chart-pie text-primary me-1"></i>{{ p.column }}</h6></div><div class="card-body"><div id="gallery-pie-{{ loop.index }}" class="chart-container"></div></div></div></div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-3 mb-0"><i class="fas fa-chart-bar me-2"></i>No charts to display.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ===== SECTION 12: EDA Summary ===== -->
+    <div class="card section-card mb-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 fw-bold"><i class="fas fa-clipboard-list text-primary me-2"></i>12. EDA Summary &amp; Recommendations</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-4">
+                <div class="col-md-3">
+                    <div class="text-center p-4 rounded" style="background:#F8FAFC;">
+                        {% set qs_score = qs.get('score', 0) %}
+                        {% set qs_grade = qs.get('grade', 'N/A') %}
+                        {% set qs_color = 'primary' if qs_score >= 90 else 'secondary' if qs_score >= 75 else 'danger' %}
+                        <div class="quality-ring border-4 border-{{ qs_color }}" style="border-style:solid;"><span class="text-{{ qs_color }}">{{ qs_grade }}</span></div>
+                        <h4 class="text-{{ qs_color }} fw-bold mt-2">{{ qs_score }}%</h4>
+                        <small class="text-muted">Overall Dataset Health</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="p-3 h-100 rounded" style="background:#F8FAFC;">
+                        <h6 class="fw-bold mb-3"><i class="fas fa-star text-primary me-1"></i>Quality Score</h6>
+                        <div class="d-flex justify-content-between small mb-1"><span>Completeness</span><span>{{ qs.get('completeness', 0) }}%</span></div>
+                        <div class="progress mb-2" style="height:4px;"><div class="progress-bar" style="width:{{ qs.get('completeness', 0) }}%"></div></div>
+                        <div class="d-flex justify-content-between small mb-1"><span>Outlier Score</span><span>{{ qs.get('outlier_score', 0) }}%</span></div>
+                        <div class="progress mb-2" style="height:4px;"><div class="progress-bar" style="width:{{ qs.get('outlier_score', 0) }}%"></div></div>
+                        <div class="d-flex justify-content-between small"><span>Missing Cells</span><span>{{ qs.get('total_missing', 0) }} / {{ qs.get('total_cells', 0) }}</span></div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="p-3 h-100 rounded" style="background:#F8FAFC;">
+                        <h6 class="fw-bold mb-3"><i class="fas fa-tools text-primary me-1"></i>Recommended Preprocessing</h6>
+                        <ul class="small mb-0 ps-3">
+                            {% set recs = [] %}
+                            {% if missing and missing.get('columns') %}{% set _ = recs.append('Handle missing values') %}{% endif %}
+                            {% set has_outliers = outliers and outliers.values()|selectattr('outlier_count', 'gt', 0)|list|length > 0 %}
+                            {% if has_outliers %}{% set _ = recs.append('Cap or transform outliers') %}{% endif %}
+                            {% if stats %}
+                                {% set skewed_cols = stats.values()|selectattr('skewness', 'gt', 1)|list|length + stats.values()|selectattr('skewness', 'lt', -1)|list|length %}
+                                {% if skewed_cols > 0 %}{% set _ = recs.append('Apply log transform to skewed features') %}{% endif %}
+                            {% endif %}
+                            {% if corr and corr.get('high_corr')|length > 3 %}{% set _ = recs.append('Reduce multicollinearity') %}{% endif %}
+                            {% if cat and cat.values()|selectattr('unique_count', 'gt', 50)|list|length > 0 %}{% set _ = recs.append('Encode high-cardinality categories') %}{% endif %}
+                            {% if not recs %}{% set _ = recs.append('Dataset is clean — ready for modeling') %}{% endif %}
+                            {% for r in recs %}<li>{{ r }}</li>{% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="p-3 h-100 rounded" style="background:#F8FAFC;">
+                        <h6 class="fw-bold mb-3"><i class="fas fa-robot text-primary me-1"></i>Suggested Models</h6>
+                        <ul class="small mb-0 ps-3">
+                            {% set n_count = overview.get('numeric_count', 0) %}
+                            {% set c_count = overview.get('categorical_count', 0) %}
+                            {% set date_count = overview.get('date_count', 0) %}
+                            {% if n_count >= 3 %}
+                            <li>Linear Regression / Ridge</li>
+                            <li>Random Forest Regressor</li>
+                            <li>XGBoost Regressor</li>
+                            {% if date_count > 0 %}<li>ARIMA / Prophet (time series)</li>{% endif %}
+                            {% elif n_count >= 1 %}
+                            <li>Linear Regression</li>
+                            <li>Decision Tree</li>
+                            {% else %}
+                            <li>Not enough numeric features</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 {% endblock %}
 {% block extra_js %}
 <script>
 function renderPlotly(elementId, chartData) {
     if (chartData && chartData.data) {
-        Plotly.newPlot(elementId, chartData.data, chartData.layout || {}, {responsive: true});
+        var el = document.getElementById(elementId);
+        if (el) Plotly.newPlot(elementId, chartData.data, chartData.layout || {}, {responsive: true});
     }
 }
 function renderAllCharts() {
     var charts = {{ charts | tojson }};
-    if (charts.correlation && charts.correlation.plotly) renderPlotly('correlationChart', charts.correlation.plotly);
-    if (charts.missing && charts.missing.plotly) renderPlotly('missingChart', charts.missing.plotly);
-    if (charts.trend && charts.trend.plotly) renderPlotly('trendChart', charts.trend.plotly);
-    if (charts.histograms) { charts.histograms.forEach(function(h, i) { if (h.plotly) renderPlotly('chart-hist-' + (i+1), h.plotly); }); }
-    if (charts.boxplots) { charts.boxplots.forEach(function(b, i) { if (b.plotly) renderPlotly('chart-box-' + (i+1), b.plotly); }); }
-    if (charts.bar) { charts.bar.forEach(function(b, i) { if (b.plotly) renderPlotly('chart-bar-' + (i+1), b.plotly); }); }
-    if (charts.pie) { charts.pie.forEach(function(p, i) { if (p.plotly) renderPlotly('chart-pie-' + (i+1), p.plotly); }); }
+
+    if (charts.correlation && charts.correlation.plotly) {
+        renderPlotly('correlationChart', charts.correlation.plotly);
+        renderPlotly('gallery-correlation', charts.correlation.plotly);
+    }
+    if (charts.missing && charts.missing.plotly) {
+        renderPlotly('missingChart', charts.missing.plotly);
+        renderPlotly('gallery-missing', charts.missing.plotly);
+    }
+    if (charts.missing_heatmap && charts.missing_heatmap.plotly) {
+        renderPlotly('missingHeatmap', charts.missing_heatmap.plotly);
+        renderPlotly('gallery-missing-heat', charts.missing_heatmap.plotly);
+    }
+    if (charts.trend && charts.trend.plotly) {
+        renderPlotly('trendChart', charts.trend.plotly);
+        renderPlotly('gallery-trend', charts.trend.plotly);
+    }
+    if (charts.rolling_avg && charts.rolling_avg.plotly) {
+        renderPlotly('rollingAvgChart', charts.rolling_avg.plotly);
+        renderPlotly('gallery-rolling', charts.rolling_avg.plotly);
+    }
+    if (charts.histograms) {
+        charts.histograms.forEach(function(h, i) {
+            if (h.plotly) {
+                renderPlotly('chart-hist-' + (i+1), h.plotly);
+                renderPlotly('gallery-hist-' + (i+1), h.plotly);
+            }
+        });
+    }
+    if (charts.density) {
+        charts.density.forEach(function(d, i) {
+            if (d.plotly) {
+                renderPlotly('chart-density-' + (i+1), d.plotly);
+                renderPlotly('gallery-density-' + (i+1), d.plotly);
+            }
+        });
+    }
+    if (charts.boxplots) {
+        charts.boxplots.forEach(function(b, i) {
+            if (b.plotly) {
+                renderPlotly('chart-box-' + (i+1), b.plotly);
+                renderPlotly('outlier-box-' + (i+1), b.plotly);
+                renderPlotly('gallery-box-' + (i+1), b.plotly);
+            }
+        });
+    }
+    if (charts.bar) {
+        charts.bar.forEach(function(b, i) {
+            if (b.plotly) {
+                renderPlotly('chart-bar-' + (i+1), b.plotly);
+                renderPlotly('gallery-bar-' + (i+1), b.plotly);
+            }
+        });
+    }
+    if (charts.pie) {
+        charts.pie.forEach(function(p, i) {
+            if (p.plotly) {
+                renderPlotly('chart-pie-' + (i+1), p.plotly);
+                renderPlotly('gallery-pie-' + (i+1), p.plotly);
+            }
+        });
+    }
 }
 document.addEventListener('DOMContentLoaded', function() {
     renderAllCharts();
-    var triggerEls = document.querySelectorAll('#edaTabs button[data-bs-toggle="tab"]');
-    triggerEls.forEach(function(el) {
-        el.addEventListener('shown.bs.tab', function() {
-            setTimeout(function() {
-                var activePane = document.querySelector('.tab-pane.active');
-                if (activePane) {
-                    activePane.querySelectorAll('.chart-container').forEach(function(container) {
-                        if (container.data && container.data.plotly) {
-                            Plotly.Plots.resize(container.id);
-                        } else {
-                            var plotDiv = container.querySelector('.js-plotly-plot');
-                            if (plotDiv) Plotly.Plots.resize(plotDiv);
-                        }
-                    });
-                }
-            }, 100);
-        });
-    });
 });
 </script>
 {% endblock %}

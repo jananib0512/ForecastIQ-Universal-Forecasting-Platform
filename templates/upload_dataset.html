@@ -22,7 +22,7 @@
                             <label class="form-label fw-semibold">Choose File</label>
                             <div class="upload-zone text-center p-5 border border-2 border-dashed rounded"
                                  id="dropZone"
-                                 style="cursor:pointer; background:#f8f9fc; transition: all 0.2s;">
+                                 style="cursor:pointer; background:#F8FAFC; transition: all 0.2s;">
                                 <i class="fas fa-cloud-upload-alt fa-4x text-primary mb-3" id="uploadIcon"></i>
                                 <h5 class="mb-1" id="dropText">Drag & drop your file here</h5>
                                 <p class="text-muted mb-3 small">or click to browse</p>
@@ -70,18 +70,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
     dropZone.addEventListener('dragover', function (e) {
         e.preventDefault();
-        this.style.background = '#e8f0fe';
-        this.style.borderColor = '#0d6efd';
+        this.style.background = '#DBEAFE';
+        this.style.borderColor = '#2563EB';
     });
 
     dropZone.addEventListener('dragleave', function () {
-        this.style.background = '#f8f9fc';
+        this.style.background = '#F8FAFC';
         this.style.borderColor = '';
     });
 
     dropZone.addEventListener('drop', function (e) {
         e.preventDefault();
-        this.style.background = '#f8f9fc';
+        this.style.background = '#F8FAFC';
         if (e.dataTransfer.files.length) {
             fileInput.files = e.dataTransfer.files;
             handleFile(e.dataTransfer.files[0]);
@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function () {
         fileName.textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
         fileInfo.classList.remove('d-none');
         dropText.textContent = 'File selected';
-        uploadIcon.className = 'fas fa-check-circle fa-4x text-success mb-3';
+        uploadIcon.className = 'fas fa-check-circle fa-4x text-primary mb-3';
         uploadBtn.disabled = false;
     }
 });

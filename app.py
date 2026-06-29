@@ -8,6 +8,7 @@ from routes.preprocessing import preprocessing_bp
 from routes.forecasting import forecasting_bp
 from routes.comparison import comparison_bp
 from routes.reports import reports_bp
+from schema_sync import sync_schema
 import os
 
 
@@ -41,5 +42,6 @@ def create_app():
         from models.report_model import Report
         from models.analysis_history_model import AnalysisHistory
         db.create_all()
+        sync_schema(app)
 
     return app

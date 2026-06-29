@@ -47,7 +47,8 @@ def upload_dataset(file, user_id):
         file_path=file_info['file_path'],
         file_size=file_info['file_size'],
         rows_count=len(df),
-        columns_count=len(df.columns)
+        columns_count=len(df.columns),
+        workflow_step=1
     )
     db.session.add(dataset)
     db.session.commit()
@@ -76,16 +77,60 @@ def delete_dataset(dataset):
 
 def get_preview_data(file_path, extension, rows=20):
     df = read_dataframe(file_path, extension, nrows=rows)
+
     if df is None:
         return None, None, None
+
     columns = list(df.columns)
     dtypes = {str(col): str(df[col].dtype) for col in df.columns}
-    data = df.fillna('').values.tolist()
-    return columns, data, dtypes
 
+    preview_df = df.copy()
+
+    import re
+
+    for col in preview_df.columns:
+        if preview_df[col].dtype == object:
+            try:
+                converted = pd.to_datetime(preview_df[col], errors="raise")
+                preview_df[col] = converted.dt.strftime("%Y-%m-%d %H:%M")
+            except Exception:
+                pass
+
+    for col in preview_df.columns:
+        try:
+            # Handle timezone-aware datetime columns
+            if "datetime" in str(preview_df[col].dtype).lower():
+                preview_df[col] = (
+                    preview_df[col]
+                    .dt.tz_localize(None)
+                    .dt.strftime("%Y-%m-%d %H:%M")
+                )
+        except Exception:
+            pass
+
+    data = preview_df.fillna("").values.tolist()
+
+    return columns, data, dtypes
 
 def get_column_info(file_path, extension):
     df = read_dataframe(file_path, extension)
     if df is None:
         return None, None
     return len(df), len(df.columns)
+
+
+def get_column_detail_stats(file_path, extension):
+    df = read_dataframe(file_path, extension, nrows=10000)
+    if df is None:
+        return {}
+    stats = {}
+    for col in df.columns:
+        col_name = str(col)
+        unique_count = int(df[col].nunique())
+        non_null = df[col].dropna()
+        example_val = str(non_null.iloc[0]) if len(non_null) > 0 else ''
+        stats[col_name] = {
+            'unique_count': unique_count,
+            'example_value': example_val
+        }
+    return stats

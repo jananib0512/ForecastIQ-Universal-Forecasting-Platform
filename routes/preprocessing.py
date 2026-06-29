@@ -8,7 +8,7 @@ from services.preprocessing_service import (
     get_preprocessing_report, get_column_details
 )
 from services.activity_service import log_activity
-from services.workflow_service import get_workflow_state, get_step_urls
+from services.workflow_service import get_workflow_state, get_step_urls, require_step_completion, complete_step
 
 preprocessing_bp = Blueprint('preprocessing', __name__)
 
@@ -20,10 +20,9 @@ def mode_selection(dataset_id):
     if not dataset:
         flash('Dataset not found.', 'danger')
         return redirect(url_for('dataset.list_datasets'))
-    # Auto-redirect to preprocessing dashboard if already completed
-    report = get_preprocessing_report(dataset_id)
-    if report:
-        return redirect(url_for('preprocessing.dashboard', dataset_id=dataset_id))
+    resp = require_step_completion(dataset_id, 4)
+    if resp:
+        return resp
     workflow_state = get_workflow_state(dataset_id)
     step_urls = get_step_urls(dataset_id, 4, workflow_state)
     return render_template('preprocessing_mode.html', dataset=dataset,
@@ -38,6 +37,9 @@ def auto_preprocessing(dataset_id):
     if not dataset:
         flash('Dataset not found.', 'danger')
         return redirect(url_for('dataset.list_datasets'))
+    resp = require_step_completion(dataset_id, 4)
+    if resp:
+        return resp
 
     results, error = run_automatic_preprocessing(dataset_id, session['user_id'])
     if error:
@@ -47,6 +49,7 @@ def auto_preprocessing(dataset_id):
     log_activity(session['user_id'], 'preprocessing_auto_completed', 'preprocessing', dataset_id,
                  f'Automatic preprocessing completed for {dataset.file_name}')
     flash('Automatic preprocessing completed successfully!', 'success')
+    complete_step(dataset_id)
     return redirect(url_for('preprocessing.dashboard', dataset_id=dataset_id))
 
 
@@ -57,6 +60,9 @@ def manual_preprocessing(dataset_id):
     if not dataset:
         flash('Dataset not found.', 'danger')
         return redirect(url_for('dataset.list_datasets'))
+    resp = require_step_completion(dataset_id, 4)
+    if resp:
+        return resp
 
     if request.method == 'POST':
         config = {
@@ -77,6 +83,7 @@ def manual_preprocessing(dataset_id):
         log_activity(session['user_id'], 'preprocessing_manual_completed', 'preprocessing', dataset_id,
                      f'Manual preprocessing completed for {dataset.file_name}')
         flash('Manual preprocessing completed successfully!', 'success')
+        complete_step(dataset_id)
         return redirect(url_for('preprocessing.dashboard', dataset_id=dataset_id))
 
     numeric, categorical, date_cols, missing_info = get_column_details(dataset_id, session['user_id'])
@@ -100,6 +107,9 @@ def dashboard(dataset_id):
     if not dataset:
         flash('Dataset not found.', 'danger')
         return redirect(url_for('dataset.list_datasets'))
+    resp = require_step_completion(dataset_id, 4)
+    if resp:
+        return resp
 
     report = get_preprocessing_report(dataset_id)
     if not report:
@@ -123,6 +133,9 @@ def summary(dataset_id):
     if not dataset:
         flash('Dataset not found.', 'danger')
         return redirect(url_for('dataset.list_datasets'))
+    resp = require_step_completion(dataset_id, 4)
+    if resp:
+        return resp
 
     report = get_preprocessing_report(dataset_id)
     if not report:
@@ -146,6 +159,9 @@ def download_processed(dataset_id):
     if not dataset:
         flash('Dataset not found.', 'danger')
         return redirect(url_for('dataset.list_datasets'))
+    resp = require_step_completion(dataset_id, 4)
+    if resp:
+        return resp
 
     report = get_preprocessing_report(dataset_id)
     if not report or not report.output_file:

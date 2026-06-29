@@ -2,14 +2,14 @@
 {% block title %}Report Dashboard{% endblock %}
 {% block extra_css %}
 <style>
-.section-card { border-radius: 0.75rem; border: 1px solid #e9ecef; transition: box-shadow 0.2s; }
+.section-card { border-radius: 0.75rem; border: 1px solid var(--border-color); transition: box-shadow 0.2s; }
 .section-card:hover { box-shadow: 0 0.25rem 1rem rgba(0,0,0,0.06); }
-.stat-box { padding: 1.25rem; border-radius: 0.75rem; background: white; border: 1px solid #e9ecef; text-align: center; height: 100%; }
+.stat-box { padding: 1.25rem; border-radius: 0.75rem; background: white; border: 1px solid var(--border-color); text-align: center; height: 100%; }
 .stat-box h3 { font-weight: 700; margin-bottom: 0.25rem; font-size: 1.4rem; }
-.stat-box small { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d; }
+.stat-box small { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); }
 .insight-badge { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.8rem; border-radius: 2rem; font-size: 0.85rem; }
 .download-btn-group { display: flex; gap: 0.5rem; }
-.action-card { border-radius: 1rem; transition: all 0.2s; border: 1px solid #e9ecef; cursor: pointer; text-decoration: none; color: inherit; display: block; }
+.action-card { border-radius: 1rem; transition: all 0.2s; border: 1px solid var(--border-color); cursor: pointer; text-decoration: none; color: inherit; display: block; }
 .action-card:hover { transform: translateY(-3px); box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.1); text-decoration: none; color: inherit; }
 .action-card .card-body { padding: 1.5rem; text-align: center; }
 .action-card i { font-size: 2rem; margin-bottom: 0.75rem; }
@@ -27,7 +27,7 @@
             <a href="{{ url_for('reports.download_report', dataset_id=dataset.id, file_format='pdf') }}" class="btn btn-danger">
                 <i class="fas fa-file-pdf me-1"></i>PDF
             </a>
-            <a href="{{ url_for('reports.download_report', dataset_id=dataset.id, file_format='csv') }}" class="btn btn-success">
+            <a href="{{ url_for('reports.download_report', dataset_id=dataset.id, file_format='csv') }}" class="btn btn-primary">
                 <i class="fas fa-file-csv me-1"></i>CSV
             </a>
             <a href="{{ url_for('reports.download_report', dataset_id=dataset.id, file_format='xlsx') }}" class="btn btn-primary">
@@ -41,9 +41,9 @@
 
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            {% if prev_url %}
-            <a href="{{ prev_url }}" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left me-1"></i>Back to Comparison
+            {% if step_urls.prev %}
+            <a href="{{ step_urls.prev }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left me-1"></i> Previous Step
             </a>
             {% endif %}
         </div>
@@ -59,13 +59,13 @@
             <div class="stat-box"><h3 class="text-primary">{{ dataset.file_name }}</h3><small>Dataset Name</small></div>
         </div>
         <div class="col-md-3 col-6">
-            <div class="stat-box"><h3 class="text-info">{{ r.get('dataset_rows', 0) }}</h3><small>Total Rows</small></div>
+            <div class="stat-box"><h3 class="text-primary">{{ r.get('dataset_rows', 0) }}</h3><small>Total Rows</small></div>
         </div>
         <div class="col-md-3 col-6">
-            <div class="stat-box"><h3 class="text-success">{{ r.get('dataset_columns', 0) }}</h3><small>Total Columns</small></div>
+            <div class="stat-box"><h3 class="text-primary">{{ r.get('dataset_columns', 0) }}</h3><small>Total Columns</small></div>
         </div>
         <div class="col-md-3 col-6">
-            <div class="stat-box"><h3 class="text-warning">{{ r.get('upload_date', 'N/A') }}</h3><small>Uploaded Date</small></div>
+            <div class="stat-box"><h3 class="text-primary">{{ r.get('upload_date', 'N/A') }}</h3><small>Uploaded Date</small></div>
         </div>
     </div>
 
@@ -80,7 +80,7 @@
                     {% if v %}
                     <div class="d-flex justify-content-between mb-2">
                         <span class="text-muted">Status</span>
-                        <span class="badge bg-{{ 'success' if v.get('validation_status') == 'completed' else 'warning' }}">{{ v.get('validation_status', 'N/A') }}</span>
+                        <span class="badge bg-{{ 'primary' if v.get('validation_status') == 'completed' else 'secondary' }}">{{ v.get('validation_status', 'N/A') }}</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span class="text-muted">Errors Found</span>
@@ -100,7 +100,7 @@
         <div class="col-lg-6">
             <div class="card section-card h-100">
                 <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fw-bold"><i class="fas fa-chart-pie text-success me-2"></i>EDA Summary</h5>
+                    <h5 class="mb-0 fw-bold"><i class="fas fa-chart-pie text-primary me-2"></i>EDA Summary</h5>
                 </div>
                 <div class="card-body">
                     {% set ed = r.get('eda') %}
@@ -131,7 +131,7 @@
         <div class="col-lg-6">
             <div class="card section-card h-100">
                 <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fw-bold"><i class="fas fa-filter text-warning me-2"></i>Preprocessing Summary</h5>
+                    <h5 class="mb-0 fw-bold"><i class="fas fa-filter text-primary me-2"></i>Preprocessing Summary</h5>
                 </div>
                 <div class="card-body">
                     {% set p = r.get('preprocessing') %}
@@ -162,7 +162,7 @@
         <div class="col-lg-6">
             <div class="card section-card h-100">
                 <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fw-bold"><i class="fas fa-chart-line text-info me-2"></i>Forecast Summary</h5>
+                    <h5 class="mb-0 fw-bold"><i class="fas fa-chart-line text-primary me-2"></i>Forecast Summary</h5>
                 </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-2">
@@ -194,19 +194,19 @@
                     <div class="row g-3">
                         <div class="col-md-3 col-6">
                             <div class="stat-box">
-                                <h3 class="text-warning">{{ r.get('best_model', 'N/A') }}</h3>
+                                <h3 class="text-primary">{{ r.get('best_model', 'N/A') }}</h3>
                                 <small>Best Model</small>
                             </div>
                         </div>
                         <div class="col-md-3 col-6">
                             <div class="stat-box">
-                                <h3 class="text-info">{{ r.get('best_rmse', 'N/A') }}</h3>
+                                <h3 class="text-primary">{{ r.get('best_rmse', 'N/A') }}</h3>
                                 <small>RMSE</small>
                             </div>
                         </div>
                         <div class="col-md-3 col-6">
                             <div class="stat-box">
-                                <h3 class="text-success">{{ r.get('best_mae', 'N/A') }}</h3>
+                                <h3 class="text-primary">{{ r.get('best_mae', 'N/A') }}</h3>
                                 <small>MAE</small>
                             </div>
                         </div>
@@ -230,14 +230,14 @@
 
     <div class="card section-card mt-4">
         <div class="card-header bg-white py-3">
-            <h5 class="mb-0 fw-bold"><i class="fas fa-lightbulb text-warning me-2"></i>Smart Insights</h5>
+            <h5 class="mb-0 fw-bold"><i class="fas fa-lightbulb text-primary me-2"></i>Smart Insights</h5>
         </div>
         <div class="card-body">
             <div class="row g-2">
                 {% for insight in r.get('smart_insights', []) %}
                 <div class="col-md-6">
                     <div class="insight-badge bg-light w-100 text-start">
-                        <i class="fas fa-check-circle text-success flex-shrink-0"></i>
+                        <i class="fas fa-check-circle text-primary flex-shrink-0"></i>
                         <span>{{ insight }}</span>
                     </div>
                 </div>
@@ -252,7 +252,7 @@
 
     <div class="card section-card mt-4">
         <div class="card-header bg-white py-3">
-            <h5 class="mb-0 fw-bold"><i class="fas fa-download text-success me-2"></i>Download Center</h5>
+            <h5 class="mb-0 fw-bold"><i class="fas fa-download text-primary me-2"></i>Download Center</h5>
         </div>
         <div class="card-body">
             <div class="row g-3">
@@ -264,7 +264,7 @@
                     </a>
                 </div>
                 <div class="col-md-4">
-                    <a href="{{ url_for('reports.download_report', dataset_id=dataset.id, file_format='csv') }}" class="btn btn-outline-success w-100 py-3">
+                    <a href="{{ url_for('reports.download_report', dataset_id=dataset.id, file_format='csv') }}" class="btn btn-outline-primary w-100 py-3">
                         <i class="fas fa-file-csv fa-2x mb-2 d-block"></i>
                         <span class="fw-bold">CSV Report</span><br>
                         <small class="text-muted">Raw data export</small>

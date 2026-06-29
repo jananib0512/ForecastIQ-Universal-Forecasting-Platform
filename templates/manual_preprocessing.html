@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container py-4">
     <div class="text-center mb-4">
-        <h2 class="fw-bold"><i class="fas fa-sliders-h text-success me-2"></i>Manual Preprocessing</h2>
+        <h2 class="fw-bold"><i class="fas fa-sliders-h text-primary me-2"></i>Manual Preprocessing</h2>
         <p class="text-muted">Configure preprocessing steps for <strong>{{ dataset.file_name }}</strong></p>
     </div>
     <form method="POST" action="{{ url_for('preprocessing.manual_preprocessing', dataset_id=dataset.id) }}" id="prepForm">
@@ -11,7 +11,7 @@
             <div class="col-md-6">
                 <div class="card shadow border-0 h-100">
                     <div class="card-header bg-white py-3">
-                        <h5 class="mb-0 fw-bold text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Missing Values</h5>
+                        <h5 class="mb-0 fw-bold text-primary"><i class="fas fa-exclamation-triangle me-2"></i>Missing Values</h5>
                     </div>
                     <div class="card-body">
                         {% if missing_info %}
@@ -19,12 +19,12 @@
                             <small class="text-muted">Columns with missing values:</small>
                             <div class="d-flex flex-wrap gap-1 mt-1">
                                 {% for col, count in missing_info.items() %}
-                                <span class="badge bg-warning text-dark">{{ col }}: {{ count }}</span>
+                                <span class="badge bg-secondary">{{ col }}: {{ count }}</span>
                                 {% endfor %}
                             </div>
                         </div>
                         {% else %}
-                        <div class="alert alert-success py-2 small">No missing values detected.</div>
+                        <div class="alert alert-primary py-2 small">No missing values detected.</div>
                         {% endif %}
                         <label class="form-label fw-semibold">Method</label>
                         <select name="missing_method" class="form-select">
@@ -42,7 +42,7 @@
             <div class="col-md-6">
                 <div class="card shadow border-0 h-100">
                     <div class="card-header bg-white py-3">
-                        <h5 class="mb-0 fw-bold text-warning"><i class="fas fa-exclamation-circle me-2"></i>Outlier Handling</h5>
+                        <h5 class="mb-0 fw-bold text-primary"><i class="fas fa-exclamation-circle me-2"></i>Outlier Handling</h5>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
@@ -102,7 +102,7 @@
             <div class="col-md-6">
                 <div class="card shadow border-0 h-100">
                     <div class="card-header bg-white py-3">
-                        <h5 class="mb-0 fw-bold text-info"><i class="fas fa-arrows-alt me-2"></i>Feature Scaling</h5>
+                        <h5 class="mb-0 fw-bold text-primary"><i class="fas fa-arrows-alt me-2"></i>Feature Scaling</h5>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
@@ -134,7 +134,7 @@
             <div class="col-12">
                 <div class="card shadow border-0">
                     <div class="card-header bg-white py-3">
-                        <h5 class="mb-0 fw-bold text-secondary"><i class="fas fa-calendar me-2"></i>Date Feature Engineering</h5>
+                        <h5 class="mb-0 fw-bold text-primary"><i class="fas fa-calendar me-2"></i>Date Feature Engineering</h5>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
@@ -161,7 +161,7 @@
             {% endif %}
         </div>
         <div class="text-center mt-4">
-            <button type="submit" class="btn btn-success btn-lg px-5">
+            <button type="submit" class="btn btn-primary btn-lg px-5">
                 <i class="fas fa-cogs me-2"></i>Run Preprocessing
             </button>
             <a href="{{ url_for('preprocessing.mode_selection', dataset_id=dataset.id) }}" class="btn btn-outline-secondary btn-lg ms-2">

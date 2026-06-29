@@ -32,25 +32,25 @@
             </div>
         </div>
         <div class="col-md-3 col-6">
-            <div class="card border-start border-info border-4 shadow-sm h-100">
+            <div class="card border-start border-primary border-4 shadow-sm h-100">
                 <div class="card-body text-center">
-                    <h3 class="fw-bold text-info mb-0">{{ report.total_columns }}</h3>
+                    <h3 class="fw-bold text-primary mb-0">{{ report.total_columns }}</h3>
                     <small class="text-muted">Total Columns</small>
                 </div>
             </div>
         </div>
         <div class="col-md-3 col-6">
-            <div class="card border-start border-warning border-4 shadow-sm h-100">
+            <div class="card border-start border-primary border-4 shadow-sm h-100">
                 <div class="card-body text-center">
-                    <h3 class="fw-bold text-warning mb-0">{{ total_missing }}</h3>
+                    <h3 class="fw-bold text-primary mb-0">{{ total_missing }}</h3>
                     <small class="text-muted">Missing Values</small>
                 </div>
             </div>
         </div>
         <div class="col-md-3 col-6">
-            <div class="card border-start border-{{ 'success' if issues_count == 0 else 'danger' }} border-4 shadow-sm h-100">
+            <div class="card border-start border-{{ 'primary' if issues_count == 0 else 'danger' }} border-4 shadow-sm h-100">
                 <div class="card-body text-center">
-                    <h3 class="fw-bold text-{{ 'success' if issues_count == 0 else 'danger' }} mb-0">{{ issues_count }}</h3>
+                    <h3 class="fw-bold text-{{ 'primary' if issues_count == 0 else 'danger' }} mb-0">{{ issues_count }}</h3>
                     <small class="text-muted">Issues Found</small>
                 </div>
             </div>
@@ -62,7 +62,7 @@
         <div class="col-md-6">
             <div class="card shadow border-0 h-100">
                 <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fw-bold text-warning">
+                    <h5 class="mb-0 fw-bold text-primary">
                         <i class="fas fa-exclamation-triangle me-2"></i>Missing Values
                     </h5>
                 </div>
@@ -82,7 +82,7 @@
                                     <td class="px-3">{{ mv.column }}</td>
                                     <td class="text-center px-3">{{ mv.count }}</td>
                                     <td class="text-end px-3">
-                                        <span class="badge bg-{{ 'danger' if mv.percentage > 20 else 'warning' if mv.percentage > 5 else 'secondary' }}">
+                                        <span class="badge bg-{{ 'danger' if mv.percentage > 20 else 'secondary' if mv.percentage > 5 else 'secondary' }}">
                                             {{ mv.percentage }}%
                                         </span>
                                     </td>
@@ -135,14 +135,14 @@
         <div class="col-md-6">
             <div class="card shadow border-0 h-100">
                 <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fw-bold text-warning">
+                    <h5 class="mb-0 fw-bold text-primary">
                         <i class="fas fa-columns me-2"></i>Duplicate Columns
                     </h5>
                 </div>
                 <div class="card-body">
                     {% for group in duplicate_columns %}
                     <div class="mb-2">
-                        <span class="badge bg-warning text-dark me-1">Group {{ loop.index }}</span>
+                        <span class="badge bg-secondary me-1">Group {{ loop.index }}</span>
                         {% for col in group %}
                         <code>{{ col }}</code>{% if not loop.last %} <span class="text-muted">=</span> {% endif %}
                         {% endfor %}
@@ -156,7 +156,7 @@
         <div class="col-md-6">
             <div class="card shadow border-0 h-100">
                 <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fw-bold text-success">
+                    <h5 class="mb-0 fw-bold text-primary">
                         <i class="fas fa-tag me-2"></i>Detected Column Types
                     </h5>
                 </div>
@@ -173,7 +173,7 @@
                     <h6 class="text-muted small text-uppercase">Categorical ({{ categorical_columns|length }})</h6>
                     <div class="d-flex flex-wrap gap-1 mb-3">
                         {% for col in categorical_columns %}
-                        <span class="badge bg-success">{{ col }}</span>
+                        <span class="badge bg-primary">{{ col }}</span>
                         {% endfor %}
                     </div>
                     {% endif %}
@@ -181,7 +181,7 @@
                     <h6 class="text-muted small text-uppercase">Date ({{ date_columns|length }})</h6>
                     <div class="d-flex flex-wrap gap-1">
                         {% for col in date_columns %}
-                        <span class="badge bg-info text-dark">{{ col }}</span>
+                        <span class="badge bg-primary">{{ col }}</span>
                         {% endfor %}
                     </div>
                     {% endif %}
@@ -220,11 +220,11 @@
                         <li class="list-group-item d-flex justify-content-between px-0">
                             <span>Validation Status</span>
                             {% if report.validation_status == 'completed' %}
-                            <span class="badge bg-success rounded-pill px-3">Completed</span>
+                            <span class="badge bg-primary rounded-pill px-3">Completed</span>
                             {% elif report.validation_status == 'failed' %}
                             <span class="badge bg-danger rounded-pill px-3">Failed</span>
                             {% else %}
-                            <span class="badge bg-warning text-dark rounded-pill px-3">Pending</span>
+                            <span class="badge bg-secondary rounded-pill px-3">Pending</span>
                             {% endif %}
                         </li>
                     </ul>
@@ -234,12 +234,12 @@
     </div>
 
     {% if issues_count == 0 %}
-    <div class="alert alert-success mt-4">
+    <div class="alert alert-primary mt-4">
         <i class="fas fa-check-circle me-2"></i>
         <strong>Clean dataset!</strong> No validation issues were found.
     </div>
     {% else %}
-    <div class="alert alert-warning mt-4">
+    <div class="alert alert-secondary mt-4">
         <i class="fas fa-info-circle me-2"></i>
         <strong>{{ issues_count }} issue{% if issues_count != 1 %}s{% endif %} found.</strong>
         Consider preprocessing to clean the data before forecasting.

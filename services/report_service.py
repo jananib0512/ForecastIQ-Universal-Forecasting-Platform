@@ -172,8 +172,6 @@ def generate_full_report(dataset_id):
         elif s['number'] == 5:
             detail = f'Model: {fc.model_name if fc else "N/A"}'
         elif s['number'] == 6:
-            detail = f'Best: {comp.best_model if comp else "N/A"}'
-        elif s['number'] == 7:
             detail = 'Report generated'
         steps_summary.append({'number': s['number'], 'name': s['name'], 'detail': detail})
 

@@ -32,7 +32,7 @@
     {% if chart_keys | length == 0 %}
     <div class="card shadow border-0">
         <div class="card-body text-center py-5">
-            <i class="fas fa-chart-bar fa-4x mb-3" style="opacity:0.3;"></i>
+            <i class="fas fa-chart-bar fa-4x mb-3" style="opacity:0.2;"></i>
             <h5 class="text-muted">No charts to display</h5>
             <p class="text-muted small">Charts will appear here after running EDA.</p>
         </div>
@@ -58,7 +58,7 @@
     {% set trend_chart = charts.get('trend', {}) %}
     {% if trend_chart and trend_chart.get('plotly') %}
     <div class="card shadow border-0 mb-4 chart-box">
-        <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold text-info"><i class="fas fa-chart-line me-2"></i>Trend Analysis</h5></div>
+        <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold"><i class="fas fa-chart-line text-primary me-2"></i>Trend Analysis</h5></div>
         <div class="card-body"><div id="chart-trend" class="chart-wrapper"></div></div>
     </div>
     {% endif %}
@@ -82,7 +82,7 @@
     {% set boxplots = charts.get('boxplots', []) %}
     {% if boxplots %}
     <div class="card shadow border-0 mb-4 chart-box">
-        <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold text-warning"><i class="fas fa-chart-box me-2"></i>Box Plots</h5></div>
+        <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold text-primary"><i class="fas fa-chart-box me-2"></i>Box Plots</h5></div>
         <div class="card-body">
             <div class="row">
                 {% for b in boxplots %}
@@ -98,7 +98,7 @@
     {% set bars = charts.get('bar', []) %}
     {% if bars %}
     <div class="card shadow border-0 mb-4 chart-box">
-        <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold text-success"><i class="fas fa-chart-simple me-2"></i>Bar Charts</h5></div>
+        <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold text-primary"><i class="fas fa-chart-simple me-2"></i>Bar Charts</h5></div>
         <div class="card-body">
             <div class="row">
                 {% for b in bars %}
@@ -114,7 +114,7 @@
     {% set pies = charts.get('pie', []) %}
     {% if pies %}
     <div class="card shadow border-0 mb-4 chart-box">
-        <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold text-info"><i class="fas fa-chart-pie me-2"></i>Pie Charts</h5></div>
+        <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold text-primary"><i class="fas fa-chart-pie me-2"></i>Pie Charts</h5></div>
         <div class="card-body">
             <div class="row">
                 {% for p in pies %}

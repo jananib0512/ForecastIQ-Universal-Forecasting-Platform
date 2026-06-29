@@ -50,18 +50,10 @@
                     </ul>
                     <hr>
                     <div class="d-grid gap-2">
-                        {% if report %}
-                            <a href="{{ url_for('dataset.validation_report', report_id=report.id) }}"
-                               class="btn btn-success">
-                                <i class="fas fa-clipboard-check me-2"></i>View Validation Report
-                            </a>
-                        {% else %}
-                            <form method="POST" action="{{ url_for('dataset.validate', dataset_id=dataset.id) }}">
-                                <button type="submit" class="btn btn-primary w-100">
-                                    <i class="fas fa-check-double me-2"></i>Run Validation
-                                </button>
-                            </form>
-                        {% endif %}
+                        <a href="{{ url_for('dataset.validation_dashboard', dataset_id=dataset.id) }}"
+                           class="btn btn-primary">
+                            <i class="fas fa-clipboard-check me-2"></i>View Validation Dashboard
+                        </a>
                         {% if full_preview %}
                             <a href="{{ url_for('dataset.detail', dataset_id=dataset.id) }}"
                                class="btn btn-outline-secondary">
@@ -103,7 +95,7 @@
                                     {% for col in columns %}
                                     <th class="px-3">
                                         {{ col }}
-                                        <br><small class="text-muted fw-normal">{{ dtypes.get(col, '') }}</small>
+                                        <br><small style="color:#94A3B8;" class="fw-normal">{{ dtypes.get(col, '') }}</small>
                                     </th>
                                     {% endfor %}
                                 </tr>
@@ -122,7 +114,7 @@
                     </div>
                     {% else %}
                     <div class="text-center py-5">
-                        <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                        <i class="fas fa-exclamation-triangle fa-3x text-secondary mb-3"></i>
                         <p class="text-muted">Unable to preview this dataset.</p>
                     </div>
                     {% endif %}

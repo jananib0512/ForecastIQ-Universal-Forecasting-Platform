@@ -19,7 +19,7 @@
                         <div class="stat-card-value">{{ total_datasets }}</div>
                         <div class="stat-card-label">Total Datasets</div>
                     </div>
-                    <div class="stat-card-icon" style="background:rgba(13,110,253,0.1);color:var(--primary);">
+                    <div class="stat-card-icon" style="background:var(--primary-bg);color:var(--primary);">
                         <i class="fas fa-database"></i>
                     </div>
                 </div>
@@ -35,7 +35,7 @@
                         <div class="stat-card-value">{{ validated_count }}</div>
                         <div class="stat-card-label">Validated</div>
                     </div>
-                    <div class="stat-card-icon" style="background:rgba(25,135,84,0.1);color:var(--success);">
+                    <div class="stat-card-icon" style="background:var(--primary-bg);color:var(--primary);">
                         <i class="fas fa-clipboard-check"></i>
                     </div>
                 </div>
@@ -51,7 +51,7 @@
                         <div class="stat-card-value">{{ forecast_count }}</div>
                         <div class="stat-card-label">Total Forecasts</div>
                     </div>
-                    <div class="stat-card-icon" style="background:rgba(13,202,240,0.1);color:var(--info);">
+                    <div class="stat-card-icon" style="background:var(--primary-bg);color:var(--primary);">
                         <i class="fas fa-chart-line"></i>
                     </div>
                 </div>
@@ -67,7 +67,7 @@
                         <div class="stat-card-value">{{ analysis_count }}</div>
                         <div class="stat-card-label">Analyses Completed</div>
                     </div>
-                    <div class="stat-card-icon" style="background:rgba(255,193,7,0.1);color:var(--warning);">
+                    <div class="stat-card-icon" style="background:var(--primary-bg);color:var(--primary);">
                         <i class="fas fa-file-alt"></i>
                     </div>
                 </div>
@@ -81,7 +81,7 @@
     <div class="row g-4 mb-4">
         <div class="col-md-4">
             <a href="{{ url_for('dataset.upload') }}" class="quick-action-card">
-                <div class="quick-action-icon" style="background:rgba(13,110,253,0.1);color:var(--primary);">
+                <div class="quick-action-icon" style="background:var(--primary-bg);color:var(--primary);">
                     <i class="fas fa-upload"></i>
                 </div>
                 <div class="quick-action-title">Upload Dataset</div>
@@ -90,7 +90,7 @@
         </div>
         <div class="col-md-4">
             <a href="{{ url_for('dataset.list_datasets') }}" class="quick-action-card">
-                <div class="quick-action-icon" style="background:rgba(25,135,84,0.1);color:var(--success);">
+                <div class="quick-action-icon" style="background:var(--primary-bg);color:var(--primary);">
                     <i class="fas fa-chart-bar"></i>
                 </div>
                 <div class="quick-action-title">View Analytics</div>
@@ -99,7 +99,7 @@
         </div>
         <div class="col-md-4">
             <a href="{{ url_for('dataset.list_datasets') }}" class="quick-action-card">
-                <div class="quick-action-icon" style="background:rgba(13,202,240,0.1);color:var(--info);">
+                <div class="quick-action-icon" style="background:var(--primary-bg);color:var(--primary);">
                     <i class="fas fa-file-alt"></i>
                 </div>
                 <div class="quick-action-title">Generate Report</div>
@@ -121,7 +121,7 @@
                     <ul class="activity-feed">
                         {% for a in analyses %}
                         <li class="activity-item">
-                            <div class="activity-icon" style="background:rgba(25,135,84,0.1);color:var(--success);">
+                            <div class="activity-icon" style="background:var(--primary-bg);color:var(--primary);">
                                 <i class="fas fa-file-alt"></i>
                             </div>
                             <div class="activity-content">
@@ -139,8 +139,8 @@
                         {% endfor %}
                     </ul>
                     {% else %}
-                    <div class="text-center text-muted py-5">
-                        <i class="fas fa-inbox fa-4x mb-3" style="opacity:0.3;"></i>
+                    <div class="text-center text-secondary py-5">
+                        <i class="fas fa-inbox fa-4x mb-3" style="opacity:0.2;"></i>
                         <p class="mb-0">No completed analyses yet.</p>
                     </div>
                     {% endif %}
@@ -151,7 +151,7 @@
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0 fw-bold">
-                        <i class="fas fa-trophy text-warning me-2"></i>Best Models Used
+                        <i class="fas fa-trophy text-primary me-2"></i>Best Models Used
                     </h5>
                 </div>
                 <div class="card-body p-0">
@@ -159,7 +159,7 @@
                     <ul class="activity-feed">
                         {% for bm in best_models %}
                         <li class="activity-item">
-                            <div class="activity-icon" style="background:rgba(255,193,7,0.1);color:var(--warning);">
+                            <div class="activity-icon" style="background:var(--primary-bg);color:var(--primary);">
                                 <i class="fas fa-trophy"></i>
                             </div>
                             <div class="activity-content">
@@ -169,14 +169,14 @@
                                 </div>
                             </div>
                             <div class="activity-time">
-                                <span class="badge bg-warning text-dark">{{ bm.best_model_category or '' }}</span>
+                                <span class="badge bg-primary">{{ bm.best_model_category or '' }}</span>
                             </div>
                         </li>
                         {% endfor %}
                     </ul>
                     {% else %}
-                    <div class="text-center text-muted py-5">
-                        <i class="fas fa-trophy fa-4x mb-3" style="opacity:0.3;"></i>
+                    <div class="text-center text-secondary py-5">
+                        <i class="fas fa-trophy fa-4x mb-3" style="opacity:0.2;"></i>
                         <p class="mb-0">No best models recorded yet.</p>
                     </div>
                     {% endif %}
@@ -198,8 +198,7 @@
                     <ul class="activity-feed">
                         {% for act in activities %}
                         <li class="activity-item">
-                            <div class="activity-icon"
-                                style="background:{{ 'rgba(13,110,253,0.1)' if 'upload' in act.action else 'rgba(25,135,84,0.1)' if 'valid' in act.action or 'completed' in act.action else 'rgba(13,202,240,0.1)' }};color:{{ 'var(--primary)' if 'upload' in act.action else 'var(--success)' if 'valid' in act.action or 'completed' in act.action else 'var(--info)' }};">
+                            <div class="activity-icon" style="background:var(--primary-bg);color:var(--primary);">
                                 <i class="fas fa-{{ 'upload' if 'upload' in act.action else 'check-circle' if 'valid' in act.action else 'chart-pie' if 'eda' in act.action else 'trash' if 'deleted' in act.action else 'info-circle' }}"></i>
                             </div>
                             <div class="activity-content">
@@ -226,8 +225,8 @@
                         {% endfor %}
                     </ul>
                     {% else %}
-                    <div class="text-center text-muted py-5">
-                        <i class="fas fa-inbox fa-4x mb-3" style="opacity:0.3;"></i>
+                    <div class="text-center text-secondary py-5">
+                        <i class="fas fa-inbox fa-4x mb-3" style="opacity:0.2;"></i>
                         <p class="mb-1">No recent activity to display.</p>
                         <p class="small">Start by uploading a dataset to begin your forecasting journey.</p>
                     </div>
